@@ -1,0 +1,2597 @@
+<!DOCTYPE html>
+<html lang="fr-BE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Comptabilité — Module 0 : Bilan, résultats, PCMN & TVA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0d14; --bg2:#121724; --bg3:#0e1320; --card:#161d2d;
+  --accent:#22d68a; --accent-d:#0f7a4d; --orange:#ff8a3d; --gold:#ffd166;
+  --blue:#4dabf7; --purple:#b197fc; --pink:#f783ac;
+  --text:#e9eef7; --text2:#94a3b8; --text3:#5d6b81;
+  --border:#243044; --border2:#2f3d55;
+  --success:#22d68a; --error:#ff4d6d; --warn:#ffb020;
+  --radius:16px; --radius-s:10px;
+  --debit:#4dabf7; --credit:#ff8a3d;
+  --shadow:0 18px 45px rgba(0,0,0,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--text); font-family:'Outfit',system-ui,sans-serif;
+  min-height:100dvh; line-height:1.55; overflow-x:hidden;
+  background-image:
+    radial-gradient(1100px 520px at 12% -8%, rgba(34,214,138,.10), transparent 62%),
+    radial-gradient(900px 460px at 92% 0%, rgba(255,138,61,.09), transparent 60%),
+    linear-gradient(180deg,#0a0d14 0%,#0a0d14 100%);
+  background-attachment:fixed;
+}
+.mono{font-family:'Space Mono',ui-monospace,monospace}
+button{font-family:inherit}
+::selection{background:rgba(34,214,138,.3)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+/* ============ LIGNE DE GRAND LIVRE (signature) ============ */
+.ledger{
+  position:relative; padding-left:18px;
+}
+.ledger:before{
+  content:''; position:absolute; left:0; top:2px; bottom:2px; width:3px; border-radius:3px;
+  background:linear-gradient(180deg,var(--accent),transparent);
+}
+
+/* ============ HEADER ============ */
+.hdr{
+  position:sticky; top:0; z-index:400; display:flex; align-items:center; gap:12px;
+  justify-content:space-between; padding:10px 16px calc(10px + env(safe-area-inset-top,0px));
+  background:rgba(10,13,20,.82); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.hdr-l{display:flex; align-items:center; gap:11px; min-width:0}
+.logo{
+  width:38px;height:38px;flex:0 0 38px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(140deg,#1c2b3f,#101724); border:1px solid var(--border2);
+  font-size:1.05rem; box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.hdr-title{font-weight:800;font-size:.98rem;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:.68rem;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+.hdr-r{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;
+  background:var(--bg2);border:1px solid var(--border);font-size:.8rem;font-weight:700;white-space:nowrap
+}
+.badge b{font-weight:800}
+.badge.score{color:var(--accent);border-color:rgba(34,214,138,.28);background:rgba(34,214,138,.08)}
+.badge.streak{color:var(--orange);border-color:rgba(255,138,61,.28);background:rgba(255,138,61,.08)}
+.badge.time{color:var(--text2)}
+.hdr-r .badge span.lbl{display:inline}
+@media(max-width:560px){ .hdr-sub{display:none} .badge{padding:5px 9px;font-size:.74rem} }
+
+/* progress */
+.pbar-wrap{height:3px;background:var(--bg2);position:sticky;top:58px;z-index:399}
+.pbar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .5s cubic-bezier(.2,.9,.3,1)}
+
+/* nav dots */
+.nav{
+  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:12px 16px 4px;
+}
+.nav-dot{
+  width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);
+  color:var(--text2);font-weight:800;font-size:.82rem;cursor:pointer;display:grid;place-items:center;
+  transition:all .18s; position:relative
+}
+.nav-dot:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.nav-dot.active{background:var(--accent);color:#08120d;border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,214,138,.16)}
+.nav-dot.done{border-color:rgba(34,214,138,.5);color:var(--accent)}
+.nav-dot.done:after{content:'✓';position:absolute;top:-5px;right:-5px;font-size:.6rem;background:var(--accent);color:#08120d;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;font-weight:900}
+.nav-dot.home{width:auto;padding:0 12px}
+
+/* ============ LAYOUT ============ */
+main{max-width:840px;margin:0 auto;padding:12px 16px 130px}
+.screen{animation:fadeUp .38s cubic-bezier(.2,.9,.3,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.eyebrow{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:8px}
+h1{font-size:clamp(1.6rem,5.2vw,2.5rem);font-weight:900;letter-spacing:-.03em;line-height:1.1}
+h2{font-size:1.22rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+h3{font-size:1rem;font-weight:800;margin-bottom:6px}
+p{color:var(--text2)}
+.lead{font-size:1.02rem;color:var(--text2);max-width:60ch}
+
+/* ============ ACCUEIL ============ */
+.hero{
+  border:1px solid var(--border);border-radius:22px;padding:26px 22px;
+  background:
+    linear-gradient(150deg,rgba(34,214,138,.10),transparent 45%),
+    linear-gradient(300deg,rgba(255,138,61,.09),transparent 50%),
+    var(--card);
+  position:relative;overflow:hidden
+}
+.hero:before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px);background-size:100% 34px;
+  mask-image:linear-gradient(180deg,transparent,#000 70%,transparent);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 70%,transparent)
+}
+.hero>*{position:relative}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.tw{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;margin:20px 0 4px;border:1px solid var(--border2);
+  border-radius:14px;overflow:hidden;background:var(--bg3)
+}
+.tw>div{padding:12px 14px}
+.tw>div:first-child{border-right:1px solid var(--border2)}
+.tw .tw-h{font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--text3);margin-bottom:4px}
+.tw .tw-v{font-weight:800;font-size:.92rem}
+.tw .d{color:var(--debit)} .tw .c{color:var(--credit)}
+
+.who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;font-size:.85rem;color:var(--text2)}
+.who .pill{background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-weight:600}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:12px;
+  border:1px solid transparent;font-weight:800;font-size:.94rem;cursor:pointer;transition:all .18s;
+}
+.btn-primary{background:var(--accent);color:#07130c;box-shadow:0 8px 22px rgba(34,214,138,.22)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(34,214,138,.3)}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-acc{background:transparent;border-color:var(--accent);color:var(--accent)}
+.btn-acc:hover{background:var(--accent);color:#07130c}
+.btn-org{background:transparent;border-color:var(--orange);color:var(--orange)}
+.btn-org:hover{background:var(--orange);color:#180c04}
+.btn-sm{padding:9px 15px;font-size:.83rem;border-radius:10px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+
+/* ============ HUB ============ */
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:12px;margin-top:14px}
+.lvl-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;text-align:left
+}
+.lvl-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
+.lvl-card .num{
+  font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.14em;color:var(--text3);font-weight:700
+}
+.lvl-card .ico{font-size:1.5rem;margin-bottom:6px;display:block}
+.lvl-card h3{font-size:1.02rem;margin:2px 0 4px}
+.lvl-card p{font-size:.8rem;line-height:1.45}
+.lvl-card .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:.75rem;color:var(--text3);font-weight:700}
+.stars{letter-spacing:1px;font-size:.85rem}
+.lvl-card.done{border-color:rgba(34,214,138,.42);background:linear-gradient(160deg,rgba(34,214,138,.07),var(--card) 60%)}
+.lvl-card .tag{
+  position:absolute;top:12px;right:12px;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:800;padding:3px 8px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);color:var(--text3)
+}
+.lvl-card.done .tag{background:rgba(34,214,138,.14);border-color:rgba(34,214,138,.4);color:var(--accent)}
+
+/* ============ THÉORIE ============ */
+.theory{font-size:.93rem;color:var(--text2)}
+.theory h3{color:var(--text);margin:20px 0 8px;font-size:1.03rem;display:flex;align-items:center;gap:8px}
+.theory h3:first-child{margin-top:0}
+.theory h4{color:var(--text);font-size:.9rem;margin:14px 0 5px;font-weight:700}
+.theory p{margin-bottom:9px}
+.theory b,.theory strong{color:var(--text);font-weight:700}
+.theory .k{color:var(--accent);font-weight:700}
+.theory ul{margin:0 0 10px 18px}
+.theory li{margin-bottom:5px}
+.theory code{font-family:'Space Mono',monospace;font-size:.85em;background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:6px;color:var(--gold)}
+.theory table{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:.82rem}
+.theory th{
+  text-align:left;padding:8px 9px;background:var(--bg3);color:var(--text3);font-weight:800;
+  font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;border-bottom:1px solid var(--border2)
+}
+.theory td{padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.045);vertical-align:top}
+.theory tr:last-child td{border-bottom:none}
+.theory td b{color:var(--text)}
+.theory .num-c{font-family:'Space Mono',monospace;color:var(--gold);white-space:nowrap}
+.callout{
+  border-radius:12px;padding:12px 14px;margin:12px 0;font-size:.87rem;border:1px solid;
+  background:var(--bg3)
+}
+.callout .ct{font-weight:800;font-size:.72rem;letter-spacing:.11em;text-transform:uppercase;margin-bottom:5px;display:flex;gap:6px;align-items:center}
+.c-note{border-color:rgba(77,171,247,.35);background:rgba(77,171,247,.07)} .c-note .ct{color:var(--blue)}
+.c-warn{border-color:rgba(255,176,32,.35);background:rgba(255,176,32,.07)} .c-warn .ct{color:var(--warn)}
+.c-key{border-color:rgba(34,214,138,.35);background:rgba(34,214,138,.07)} .c-key .ct{color:var(--accent)}
+.c-ex{border-color:rgba(177,151,252,.32);background:rgba(177,151,252,.07)} .c-ex .ct{color:var(--purple)}
+
+/* compte en T */
+.tacc{border:1px solid var(--border2);border-radius:12px;overflow:hidden;background:var(--bg3);margin:10px 0;font-size:.84rem}
+.tacc-h{padding:7px 10px;font-weight:800;font-family:'Space Mono',monospace;font-size:.78rem;background:var(--bg2);border-bottom:1px solid var(--border2);color:var(--text)}
+.tacc-b{display:grid;grid-template-columns:1fr 1fr;min-height:52px}
+.tacc-b>div{padding:8px 10px}
+.tacc-b>div:first-child{border-right:1px solid var(--border2)}
+.tacc-s{font-family:'Space Mono',monospace;font-size:.68rem;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+.tacc-s.d{color:var(--debit)} .tacc-s.c{color:var(--credit)}
+.tacc-l{font-family:'Space Mono',monospace;color:var(--text);font-size:.82rem}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+
+/* ============ QUESTIONS ============ */
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.qcount{font-family:'Space Mono',monospace;font-size:.74rem;color:var(--text3);letter-spacing:.08em}
+.qtype{font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(177,151,252,.12);color:var(--purple);border:1px solid rgba(177,151,252,.3)}
+.qpts{font-size:.72rem;color:var(--gold);font-weight:800}
+.qtext{font-size:1.06rem;font-weight:600;color:var(--text);line-height:1.45;margin-bottom:6px}
+.qsub{font-size:.85rem;color:var(--text2);margin-bottom:14px}
+.qctx{
+  background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--blue);
+  border-radius:10px;padding:11px 13px;margin:0 0 14px;font-size:.86rem;color:var(--text2)
+}
+.qctx b{color:var(--text)}
+
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{
+  display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--border);background:var(--bg3);cursor:pointer;transition:all .16s;
+  font-size:.92rem;text-align:left;color:var(--text);width:100%
+}
+.opt:hover:not(.locked){border-color:var(--border2);background:var(--bg2);transform:translateX(3px)}
+.opt .mk{
+  flex:0 0 22px;height:22px;border-radius:7px;border:1px solid var(--border2);display:grid;place-items:center;
+  font-size:.7rem;font-weight:800;color:var(--text3);margin-top:1px
+}
+.opt.sel{border-color:var(--accent);background:rgba(34,214,138,.09)}
+.opt.sel .mk{background:var(--accent);color:#07130c;border-color:var(--accent)}
+.opt.good{border-color:var(--success);background:rgba(34,214,138,.14)}
+.opt.good .mk{background:var(--success);color:#07130c;border-color:var(--success)}
+.opt.bad{border-color:var(--error);background:rgba(255,77,109,.11)}
+.opt.bad .mk{background:var(--error);color:#fff;border-color:var(--error)}
+.opt.locked{cursor:default}
+.opt.multi .mk{border-radius:50%}
+
+/* numeric input */
+.numwrap{margin:4px 0}
+.numrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type=text].nin,input[type=email].nin{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:11px;
+  font-family:'Space Mono',monospace;font-size:1rem;width:100%;max-width:230px;outline:none;transition:border-color .15s
+}
+input.nin:focus{border-color:var(--accent)}
+input.nin.good{border-color:var(--success);background:rgba(34,214,138,.08)}
+input.nin.bad{border-color:var(--error);background:rgba(255,77,109,.07)}
+.unit{color:var(--text3);font-weight:800;font-family:'Space Mono',monospace}
+.calc{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--gold);margin-top:6px;min-height:1.1em}
+
+/* classify */
+.pool{display:flex;flex-wrap:wrap;gap:7px;padding:12px;background:var(--bg3);border:1px dashed var(--border2);border-radius:12px;min-height:56px;margin-bottom:12px}
+.pool:empty:after{content:'Tous les éléments sont classés ✓';color:var(--text3);font-size:.82rem}
+.chip{
+  padding:7px 12px;border-radius:9px;background:var(--bg2);border:1px solid var(--border2);
+  font-size:.83rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text)
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.chip.sel{background:var(--accent);color:#07130c;border-color:var(--accent)}
+.chip.good{border-color:var(--success);background:rgba(34,214,138,.16);color:var(--success)}
+.chip.bad{border-color:var(--error);background:rgba(255,77,109,.14);color:var(--error);text-decoration:line-through}
+.chip .fx{opacity:.65;font-size:.75em;margin-left:5px}
+.buckets{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.bucket{border:1px solid var(--border);border-radius:12px;background:var(--bg3);padding:10px;min-height:96px;cursor:pointer;transition:all .16s}
+.bucket:hover{border-color:var(--accent)}
+.bucket-h{font-size:.7rem;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--text3);margin-bottom:8px;display:flex;justify-content:space-between}
+.bucket-items{display:flex;flex-wrap:wrap;gap:6px}
+.bucket.b0{border-top:3px solid var(--debit)} .bucket.b0 .bucket-h{color:var(--debit)}
+.bucket.b1{border-top:3px solid var(--credit)} .bucket.b1 .bucket-h{color:var(--credit)}
+.bucket.b2{border-top:3px solid var(--purple)} .bucket.b2 .bucket-h{color:var(--purple)}
+.bucket.b3{border-top:3px solid var(--gold)} .bucket.b3 .bucket-h{color:var(--gold)}
+
+/* match */
+.match-row{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center;margin-bottom:8px}
+.match-l{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.86rem;font-weight:600}
+.match-arrow{color:var(--text3);font-size:.9rem}
+select.msel{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 11px;border-radius:10px;
+  font-family:inherit;font-size:.86rem;width:100%;outline:none;cursor:pointer;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--text3) 50%),linear-gradient(135deg,var(--text3) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  padding-right:32px
+}
+select.msel:focus{border-color:var(--accent)}
+select.msel.good{border-color:var(--success);background-color:rgba(34,214,138,.08)}
+select.msel.bad{border-color:var(--error);background-color:rgba(255,77,109,.07)}
+@media(max-width:520px){.match-row{grid-template-columns:1fr;gap:4px}.match-arrow{display:none}.match-row{margin-bottom:12px}}
+
+/* fill */
+.filltext{font-size:.95rem;line-height:2.35;color:var(--text2)}
+.filltext b{color:var(--text)}
+select.fsel{
+  background:var(--bg3);border:1px solid var(--accent);color:var(--accent);padding:5px 8px;border-radius:8px;
+  font-family:'Space Mono',monospace;font-size:.82rem;outline:none;cursor:pointer;font-weight:700;max-width:230px
+}
+select.fsel.good{border-color:var(--success);color:var(--success);background:rgba(34,214,138,.1)}
+select.fsel.bad{border-color:var(--error);color:var(--error);background:rgba(255,77,109,.08)}
+
+/* table question */
+.qtable-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--bg3);-webkit-overflow-scrolling:touch}
+table.qtable{width:100%;border-collapse:collapse;font-size:.85rem;min-width:420px}
+table.qtable th{
+  padding:9px 10px;text-align:left;background:var(--bg2);color:var(--text3);font-size:.66rem;
+  letter-spacing:.1em;text-transform:uppercase;font-weight:800;border-bottom:1px solid var(--border2);white-space:nowrap
+}
+table.qtable tr.rgood{background:rgba(34,214,138,.09)}
+table.qtable tr.rbad{background:rgba(255,77,109,.07)}
+table.qtable tr.rgood td:first-child{box-shadow:inset 3px 0 0 var(--success)}
+table.qtable tr.rbad td:first-child{box-shadow:inset 3px 0 0 var(--error)}
+.sol-lbl{font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--text3);margin:14px 0 6px}
+.was{color:var(--error);text-decoration:line-through}
+.fix{color:var(--success);font-weight:700}
+table.qtable th.hd{color:var(--debit)}
+table.qtable th.hc{color:var(--credit)}
+table.qtable td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+table.qtable tr:last-child td{border-bottom:none}
+table.qtable .fixed{color:var(--text);font-weight:600}
+table.qtable .fixed.mono{color:var(--gold)}
+table.qtable input.cin{
+  background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:8px 9px;border-radius:8px;
+  font-family:'Space Mono',monospace;font-size:.84rem;width:100%;min-width:92px;outline:none;text-align:right
+}
+table.qtable input.cin:focus{border-color:var(--accent)}
+table.qtable input.cin.good,table.qtable select.csel.good{border-color:var(--success);background:rgba(34,214,138,.1)}
+table.qtable input.cin.bad,table.qtable select.csel.bad{border-color:var(--error);background:rgba(255,77,109,.08)}
+table.qtable select.csel{
+  background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:8px 9px;border-radius:8px;
+  font-family:inherit;font-size:.83rem;width:100%;min-width:120px;outline:none;cursor:pointer
+}
+table.qtable .rowlbl{color:var(--text2);font-size:.8rem}
+.tdc-d{color:var(--debit);font-weight:800} .tdc-c{color:var(--credit);font-weight:800}
+
+/* order */
+.order-pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.order-seq{display:flex;flex-direction:column;gap:7px;min-height:40px;padding:10px;background:var(--bg3);border:1px dashed var(--border2);border-radius:12px}
+.order-seq:empty:after{content:'Clique les étapes dans le bon ordre…';color:var(--text3);font-size:.82rem}
+.oitem{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--bg2);border:1px solid var(--border2);font-size:.86rem;cursor:pointer}
+.oitem .rk{font-family:'Space Mono',monospace;color:var(--accent);font-weight:700;font-size:.78rem;flex:0 0 auto}
+.oitem.good{border-color:var(--success);background:rgba(34,214,138,.11)}
+.oitem.bad{border-color:var(--error);background:rgba(255,77,109,.09)}
+
+/* feedback */
+.fb{border-radius:12px;padding:13px 15px;margin-top:14px;font-size:.9rem;border:1px solid;animation:fadeUp .3s}
+.fb .fbt{font-weight:800;margin-bottom:5px;display:flex;align-items:center;gap:7px;font-size:.93rem}
+.fb.ok{border-color:rgba(34,214,138,.4);background:rgba(34,214,138,.09)} .fb.ok .fbt{color:var(--success)}
+.fb.hint{border-color:rgba(255,176,32,.42);background:rgba(255,176,32,.08)} .fb.hint .fbt{color:var(--warn)}
+.fb.show{border-color:rgba(255,77,109,.4);background:rgba(255,77,109,.08)} .fb.show .fbt{color:var(--error)}
+.fb .sol{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);color:var(--text2)}
+.fb .sol b{color:var(--text)}
+.fb p{color:var(--text2)}
+.attempts{display:flex;gap:5px;align-items:center;font-size:.72rem;color:var(--text3);font-weight:700}
+.att-dot{width:8px;height:8px;border-radius:50%;background:var(--border2)}
+.att-dot.used{background:var(--error)}
+
+.fb{scroll-margin-top:90px}
+.qfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+
+/* ============ BILAN ============ */
+.res-hero{text-align:center;padding:26px 20px}
+.medal{font-size:3.4rem;line-height:1;margin-bottom:8px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.grade{
+  display:inline-block;font-size:2.6rem;font-weight:900;letter-spacing:-.04em;
+  background:linear-gradient(120deg,var(--accent),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent
+}
+.legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:16px 0;font-size:.78rem;color:var(--text2)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dotc{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dotc.g{background:var(--success)} .dotc.o{background:var(--orange)} .dotc.r{background:var(--error)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin:16px 0}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:13px 10px;text-align:center}
+.stat .v{font-size:1.45rem;font-weight:900;line-height:1.1}
+.stat .l{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:800;margin-top:3px}
+.recap{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:6px}
+.recap th{padding:8px;text-align:left;color:var(--text3);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border2)}
+.recap td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
+.recap td.c{text-align:center;font-weight:800}
+.bar{height:6px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:5px}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold))}
+
+/* ============ FAB + DRAWER THÉORIE ============ */
+.fab{
+  position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:600;display:none;
+  align-items:center;gap:8px;padding:13px 18px;border-radius:999px;border:1px solid rgba(34,214,138,.4);
+  background:rgba(18,23,36,.95);backdrop-filter:blur(10px);color:var(--accent);font-weight:800;font-size:.88rem;
+  cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.5)
+}
+.fab.on{display:flex}
+.fab:hover{background:var(--accent);color:#07130c}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);z-index:900;background:var(--bg2);
+  border-left:1px solid var(--border2);transform:translateX(102%);transition:transform .32s cubic-bezier(.2,.9,.3,1);
+  display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5)
+}
+.drawer.open{transform:none}
+.drawer-h{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.drawer-b{overflow-y:auto;padding:18px;flex:1}
+.scrim{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.open{opacity:1;pointer-events:auto}
+.xbtn{background:none;border:none;color:var(--text2);font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px}
+.xbtn:hover{color:var(--text);background:var(--bg3)}
+
+/* ============ MODALS ============ */
+.ov{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:16px}
+.ov.open{display:flex}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:28px;width:100%;max-width:430px;
+  text-align:center;box-shadow:var(--shadow);animation:slideUp .35s cubic-bezier(.2,.9,.3,1);position:relative
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.modal.wide{max-width:620px;text-align:left;max-height:86vh;overflow-y:auto}
+.modal h2{font-size:1.25rem}
+.modal .sub{font-size:.85rem;color:var(--text2);margin-bottom:18px}
+.err{color:var(--error);font-size:.82rem;margin-bottom:10px;min-height:1.2em;font-weight:600}
+.lb-tabs{display:flex;gap:8px;margin-bottom:18px}
+.lb-tabs button{flex:1;padding:10px;border-radius:11px;font-weight:800;cursor:pointer;font-size:.83rem;border:1px solid}
+.lb-me{background:rgba(34,214,138,.08);border:1px solid rgba(34,214,138,.3);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-around;text-align:center;gap:8px;flex-wrap:wrap}
+.lb-me .v{font-size:1.25rem;font-weight:900} .lb-me .l{font-size:.62rem;color:var(--text3);letter-spacing:.08em;font-weight:800}
+table.lb{width:100%;border-collapse:collapse;font-size:.84rem}
+table.lb th{padding:8px 4px;text-align:left;color:var(--text3);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;border-bottom:1px solid var(--border2)}
+table.lb td{padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.035)}
+
+/* confetti */
+.cf-layer{position:fixed;inset:0;pointer-events:none;z-index:1200;overflow:hidden}
+.cf{position:absolute;width:9px;height:14px;opacity:.95;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}
+
+@media(max-width:520px){
+  main{padding:10px 12px 120px}
+  .card{padding:16px}
+  .hero{padding:22px 17px}
+  .btn{padding:12px 18px;font-size:.9rem}
+  .qtext{font-size:1rem}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="logo">⚖️</div>
+    <div style="min-width:0">
+      <div class="hdr-title">Comptabilité — Module 0</div>
+      <div class="hdr-sub">Rappels &amp; prérequis · 6<sup>e</sup> TQ</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <span id="globalTimer" class="badge time mono" style="display:none">⏱️ 00:00</span>
+    <span class="badge score">⭐ <b id="scoreVal">0</b></span>
+    <span class="badge streak" id="streakBadge" style="display:none">🔥 <b id="streakVal">0</b></span>
+  </div>
+</header>
+<div class="pbar-wrap"><div id="pbar" class="pbar"></div></div>
+<nav id="nav" class="nav"></nav>
+<main id="main"></main>
+
+<button id="theoryFab" class="fab" onclick="openTheory()">📖 <span>Théorie</span></button>
+<div id="scrim" class="scrim" onclick="closeTheory()"></div>
+<aside id="drawer" class="drawer" aria-label="Rappel théorique">
+  <div class="drawer-h">
+    <div>
+      <div class="eyebrow" style="margin:0">Fiche théorique</div>
+      <div id="drawerTitle" style="font-weight:800;font-size:1rem"></div>
+    </div>
+    <button class="xbtn" onclick="closeTheory()" aria-label="Fermer">✕</button>
+  </div>
+  <div id="drawerBody" class="drawer-b theory"></div>
+</aside>
+
+<!-- ===== MODAL EMAIL ===== -->
+<div id="emailOverlay" class="ov">
+  <div class="modal">
+    <div style="font-size:2rem;margin-bottom:10px">🎓</div>
+    <h2>Identification</h2>
+    <p class="sub">Entre ton adresse email scolaire pour démarrer ta session.</p>
+    <input type="email" id="emailInput" class="nin" style="max-width:100%;text-align:center;margin-bottom:12px"
+           placeholder="prenom.nom@eleve.istlm.be" onkeydown="if(event.key==='Enter')validateEmail()">
+    <div id="emailError" class="err"></div>
+    <button id="emailBtn" class="btn btn-primary" style="width:100%" onclick="validateEmail()">Vérifier et commencer</button>
+  </div>
+</div>
+
+<!-- ===== MODAL CLASSEMENT ===== -->
+<div id="lbOverlay" class="ov" onclick="if(event.target===this)closeLB()">
+  <div class="modal wide">
+    <button class="xbtn" style="position:absolute;top:12px;right:12px" onclick="closeLB()" aria-label="Fermer">✕</button>
+    <div id="lbTitle" class="eyebrow" style="margin-bottom:14px">Classement</div>
+    <div class="lb-tabs">
+      <button id="lbTabApp" onclick="switchLBTab('app')">🏆 Ce module</button>
+      <button id="lbTabGlobal" onclick="switchLBTab('global')">🌍 Général</button>
+    </div>
+    <div id="lbContent"></div>
+  </div>
+</div>
+
+<div id="cfLayer" class="cf-layer"></div>
+
+<script>
+/* ============================================================
+   PARTIE 1 — CONFIGURATION & ÉTAT
+   ============================================================ */
+const TRACKING = {
+  appName: "Compta — Module 0 : Bilan, PCMN & TVA",
+  totalNiveaux: 7,
+  sessionId: null,
+  scriptUrl: "https://script.google.com/macros/s/AKfycbx9bRMVuHU2mgFLii1KcQXD3LdZahnDH1rf1cWv9RuDvQAt0l3VtLtxzmbH7MtpJWRjfA/exec"
+};
+
+const APP = {
+  email: localStorage.getItem('student_email') || '',
+  classe: localStorage.getItem('student_classe') || '',
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  current: 0,           // 0 = hub, 1..7 = niveau
+  qIndex: 0,
+  completed: new Set(),
+  completedExercises: [],
+  levelStats: {},       // idx -> {first, second, shown, pts, max}
+  exerciseStartTime: null,
+  exerciseTimes: {},
+  exerciseScores: {},
+  scoreBeforeExercise: 0,
+  globalTimerStart: null,
+  globalTimerInterval: null
+};
+
+let QSTATE = {};
+
+/* ============================================================
+   PARTIE 2 — CONTENU PÉDAGOGIQUE
+   ============================================================ */
+const LEVELS = [
+/* ---------------------------------------------------------- NIVEAU 1 */
+{
+  id:1, icon:'🧩', title:'Le grand tri',
+  sub:'Bilan ou compte de résultats ? Actif ou passif ?',
+  goal:'Reconstituer par toi-même la structure des deux grands documents comptables.',
+  theory:`
+<h3>📸 Deux documents, deux logiques</h3>
+<p>Toute la comptabilité générale tient dans <b>deux tableaux</b>. Les confondre, c'est se tromper de raisonnement dès la première écriture.</p>
+<table>
+  <tr><th></th><th>Le bilan</th><th>Le compte de résultats</th></tr>
+  <tr><td><b>Image</b></td><td>Une <b>photo</b> 📸</td><td>Un <b>film</b> 🎬</td></tr>
+  <tr><td><b>Quand&nbsp;?</b></td><td>À une <b>date</b> précise (31/12)</td><td>Sur une <b>période</b> (l'exercice)</td></tr>
+  <tr><td><b>Quoi&nbsp;?</b></td><td>Le <b>patrimoine</b> : ce qu'on a, ce qu'on doit</td><td>L'<b>activité</b> : ce qui coûte, ce qui rapporte</td></tr>
+  <tr><td><b>Colonnes</b></td><td>ACTIF / PASSIF</td><td>CHARGES / PRODUITS</td></tr>
+</table>
+
+<h3>⚖️ Le bilan : emplois à gauche, ressources à droite</h3>
+<p>La question à se poser n'est pas « où je mets ça&nbsp;? » mais <b>« est-ce un bien que je possède, ou l'origine de l'argent qui l'a financé&nbsp;? »</b></p>
+<div class="tw">
+  <div><div class="tw-h">ACTIF — EMPLOIS</div><div class="tw-v d">Ce que l'entreprise <b>possède</b> et ce qu'on lui <b>doit</b></div>
+  <p style="font-size:.82rem;margin-top:6px">Bâtiments, machines, stocks, créances sur les clients, argent en banque et en caisse.</p></div>
+  <div><div class="tw-h">PASSIF — RESSOURCES</div><div class="tw-v c">D'<b>où vient</b> l'argent</div>
+  <p style="font-size:.82rem;margin-top:6px">Apport des associés, réserves, bénéfice reporté, subsides, provisions, dettes envers les banques, fournisseurs, le fisc, l'ONSS…</p></div>
+</div>
+<div class="callout c-key"><div class="ct">🔑 Règle d'or</div>
+TOTAL ACTIF = TOTAL PASSIF, <b>toujours</b>. Chaque euro placé quelque part (actif) vient forcément de quelque part (passif).</div>
+
+<h3>🎬 Le compte de résultats : ce qui coûte, ce qui rapporte</h3>
+<ul>
+  <li><b>CHARGES</b> (classe 6) : achats de marchandises, services et biens divers, rémunérations, amortissements, autres charges d'exploitation, charges financières, impôts sur le résultat.</li>
+  <li><b>PRODUITS</b> (classe 7) : ventes et prestations, produits financiers, produits non récurrents, régularisations d'impôts.</li>
+</ul>
+<p>PRODUITS − CHARGES = <b class="k">RÉSULTAT</b> (bénéfice si positif, perte si négatif).</p>
+
+<div class="callout c-warn"><div class="ct">⚠️ Piège classique</div>
+Certains intitulés ne sont <b>pas des rubriques</b> mais des <b>titres de sections</b>, c'est-à-dire des <b>résultats intermédiaires calculés</b> : « Résultat d'exploitation », « Résultat brut avant impôts », « Résultat net de l'exercice (à affecter) ». On ne peut rien « ranger » dedans : ce sont des soustractions.</div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — HAIR STYLE</div>
+Deux associés créent le salon HAIR STYLE et versent <b>20.000&nbsp;€</b> sur le compte bancaire de la société. Bilan de départ&nbsp;:
+<div class="tw" style="margin-top:10px">
+  <div><div class="tw-h">ACTIF</div><div class="tw-v">IX. Valeurs disponibles <span class="num-c">20.000</span></div></div>
+  <div><div class="tw-h">PASSIF</div><div class="tw-v">I. Apport <span class="num-c">20.000</span></div></div>
+</div>
+L'argent est <b>à l'actif</b> (le compte en banque est un bien de l'entreprise) et son <b>origine au passif</b> (l'entreprise le doit aux associés). Pas encore la moindre charge ni le moindre produit&nbsp;: aucune activité n'a démarré.</div>
+`,
+  questions:[
+  {t:'classify', pts:16,
+   q:'Range chaque rubrique du côté où elle figure au bilan.',
+   sub:'Clique un terme, puis clique la colonne. Tu peux le ressortir en le recliquant.',
+   buckets:['ACTIF','PASSIF'],
+   items:[
+     {x:'Immobilisations incorporelles',b:0},{x:'Immobilisations corporelles',b:0},
+     {x:'Immobilisations financières',b:0},{x:"Frais d'établissement",b:0},
+     {x:'Stocks',b:0},{x:'Créances à un an au plus',b:0},
+     {x:"Créances à plus d'un an",b:0},{x:'Valeurs disponibles',b:0},
+     {x:'Capital (SA)',b:1},{x:'Apport hors capital (SRL/SC)',b:1},
+     {x:'Réserves',b:1},{x:'Résultats reportés',b:1},
+     {x:'Provisions',b:1},{x:"Dettes à plus d'un an",b:1},
+     {x:'Dettes commerciales',b:1},{x:'Dettes fiscales, salariales et sociales',b:1}
+   ],
+   hint:"Pose-toi une seule question pour chaque terme : « est-ce une chose que l'entreprise possède ou qu'on lui doit ? » Si oui → actif. Si c'est de l'argent qu'elle a reçu ou qu'elle doit rendre → passif. Attention : le mot « créance » et le mot « dette » ne sont pas du même côté.",
+   ex:"À l'actif, tout ce qui est <b>emploi</b> des fonds : immobilisations (incorporelles, corporelles, financières), frais d'établissement, stocks, créances (l'argent que les <b>clients</b> me doivent) et valeurs disponibles. Au passif, l'<b>origine</b> des fonds : capitaux propres (capital ou apport, réserves, résultats reportés), provisions et toutes les dettes."},
+
+  {t:'classify', pts:14,
+   q:'Même exercice, cette fois pour le compte de résultats.',
+   buckets:['CHARGES','PRODUITS'],
+   items:[
+     {x:'Approvisionnements',b:0},{x:'Services et biens divers',b:0},
+     {x:'Rémunérations',b:0},{x:'Amortissements, réductions de valeur et provisions',b:0},
+     {x:'Charges autres',b:0},{x:'Charges financières',b:0},{x:'Charges fiscales',b:0},
+     {x:'Ventes et prestations',b:1},{x:'Produits financiers',b:1},{x:'Produits fiscaux',b:1}
+   ],
+   hint:"Ici le vocabulaire t'aide énormément : le mot lui-même contient presque toujours la réponse. Relis chaque terme à voix basse et demande-toi : est-ce que ça fait sortir de l'argent, ou entrer de l'argent ?",
+   ex:"Les charges appauvrissent l'entreprise (classe 6), les produits l'enrichissent (classe 7). « Approvisionnements » = les achats de marchandises et de matières premières. « Charges fiscales » = les impôts sur le résultat (67), et son symétrique « Produits fiscaux » = les régularisations d'impôts (77)."},
+
+  {t:'multi', pts:10,
+   q:'Trois de ces intitulés ne sont pas des rubriques : ce sont des titres de sections, des résultats calculés. Lesquels ?',
+   opts:['Résultat d\'exploitation','Stocks','Résultat brut avant impôts','Rémunérations','Résultat net de l\'exercice (à affecter)','Subsides'],
+   a:[0,2,4],
+   hint:"Une rubrique, on peut y ranger un compte du plan comptable. Un titre de section, non : il se calcule par une addition ou une soustraction. Cherche les intitulés qui commencent tous par le même mot.",
+   ex:"Résultat d'exploitation = Ventes et prestations − Charges d'exploitation. Résultat brut avant impôts = Résultat d'exploitation + Produits financiers − Charges financières. Résultat net à affecter = ce qui reste après impôts. Aucun compte du PCMN ne s'y range directement : ce sont des <b>lignes de total</b>."},
+
+  {t:'multi', pts:10,
+   q:'Parmi ces rubriques, lesquelles figurent au PASSIF du bilan ?',
+   opts:['Subsides en capital','Plus-values de réévaluation','Dettes financières à un an au plus','Placements de trésorerie','Stocks et commandes en cours'],
+   a:[0,1,2],
+   hint:"Deux d'entre elles ressemblent à des « biens » mais n'en sont pas : un subside est une somme qu'on a reçue, une plus-value de réévaluation est une richesse propre à l'entreprise. Où loge la richesse qui appartient aux associés ?",
+   ex:"Subsides en capital (15) et plus-values de réévaluation (12) font partie des <b>capitaux propres</b> : passif. Les dettes financières à un an au plus (43) sont évidemment au passif. En revanche, les placements de trésorerie (50-53) et les stocks (30-37) sont des biens : actif."},
+
+  {t:'qcm', pts:8,
+   q:"L'entreprise achète une machine de 12.000 € et ne la paie pas tout de suite. Que se passe-t-il au bilan ?",
+   opts:[
+     "Seul l'actif augmente de 12.000 € : l'entreprise possède la machine.",
+     "L'actif augmente de 12.000 € (la machine) ET le passif augmente de 12.000 € (la dette au fournisseur).",
+     "Seul le passif augmente de 12.000 € : c'est une dette.",
+     "Rien ne bouge tant que la facture n'est pas payée."],
+   a:1,
+   hint:"Relis la règle d'or : total actif = total passif, en permanence. Si un seul côté bougeait, l'égalité serait rompue. Alors, d'où vient l'argent qui a financé cette machine ?",
+   ex:"L'entreprise a un bien de plus (la machine, <b>actif +12.000</b>) financé par une ressource nouvelle : le crédit accordé par le fournisseur (<b>passif +12.000</b>). L'équilibre est conservé. C'est exactement le mécanisme de l'écriture 2300 / 4400 que tu verras au niveau 6."},
+
+  {t:'vf', pts:6,
+   q:"« Le bilan décrit une période, tandis que le compte de résultats décrit une date précise. »",
+   a:1,
+   hint:"Reprends l'image de la photo et du film. Lequel des deux documents se lit « au 31 décembre », et lequel se lit « du 1er janvier au 31 décembre » ?",
+   ex:"C'est <b>l'inverse</b>. Le bilan est une photo <b>à une date</b> (au 31/12). Le compte de résultats est un film <b>sur une période</b> (l'exercice comptable). C'est pour cela que les comptes de charges et de produits sont remis à zéro chaque année, alors que les comptes de bilan sont reportés."},
+
+  {t:'num', pts:10, unit:'€',
+   q:"Le bilan d'une PME comprend à l'actif : IMO 8.000 €, mobilier 3.500 €, banque 8.500 €. Le passif ne contient qu'une seule rubrique : l'apport. Quel est le montant de cet apport ?",
+   a:20000,
+   hint:"Tu n'as pas besoin d'informations supplémentaires : une seule égalité fondamentale permet de trouver la réponse. Additionne d'abord tout l'actif.",
+   ex:"Actif = 8.000 + 3.500 + 8.500 = <b>20.000 €</b>. Comme total actif = total passif et que le passif ne comporte qu'une rubrique, l'apport vaut nécessairement 20.000 €. C'est le bilan final de HAIR STYLE que tu retrouveras au niveau 7."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 2 */
+{
+  id:2, icon:'🏛️', title:'Anatomie du bilan',
+  sub:'Les rubriques officielles et la réforme CSA (SA / SRL / SC)',
+  goal:'Retrouver la rubrique officielle et sa classe, et maîtriser la distinction capital / apport.',
+  theory:`
+<h3>📜 Un modèle imposé par la loi</h3>
+<p>Le bilan n'est pas libre : son modèle est fixé par l'<b>arrêté royal du 29 avril 2019</b> portant exécution du Code des sociétés et des associations (« AR CSA »). Il comporte <b>dix rubriques à l'actif</b> et <b>dix au passif</b>.</p>
+
+<h4>Les rubriques du passif et leur classe</h4>
+<table>
+<tr><th>N°</th><th>Rubrique du passif</th><th>Comptes</th></tr>
+<tr><td><b>I.</b></td><td>Apport — A. Capital (SA) · A. Apport disponible / B. Apport indisponible (SRL, SC)</td><td class="num-c">10 (SA) · 11 (SRL/SC)</td></tr>
+<tr><td><b>II.</b></td><td>Plus-values de réévaluation</td><td class="num-c">12</td></tr>
+<tr><td><b>III.</b></td><td>Réserves</td><td class="num-c">13</td></tr>
+<tr><td><b>IV.</b></td><td>Bénéfice (perte) reporté(e)</td><td class="num-c">14</td></tr>
+<tr><td><b>V.</b></td><td>Subsides en capital</td><td class="num-c">15</td></tr>
+<tr><td><b>VII.</b></td><td>Provisions et impôts différés</td><td class="num-c">16</td></tr>
+<tr><td><b>VIII.</b></td><td>Dettes à plus d'un an</td><td class="num-c">17</td></tr>
+<tr><td><b>IX.</b></td><td>Dettes à un an au plus</td><td class="num-c">42 – 48</td></tr>
+<tr><td><b>X.</b></td><td>Comptes de régularisation</td><td class="num-c">49</td></tr>
+</table>
+
+<h4>Les rubriques les plus utilisées en PME</h4>
+<div class="tw">
+  <div><div class="tw-h">ACTIF</div>
+  <div style="font-size:.85rem;line-height:1.9">III. Immobilisations corporelles<br>VI. Stocks<br>VII. Créances à un an au plus<br>IX. Valeurs disponibles</div></div>
+  <div><div class="tw-h">PASSIF</div>
+  <div style="font-size:.85rem;line-height:1.9">I. Apport<br>III. Réserves<br>VIII. Dettes à plus d'un an<br>IX. Dettes à un an au plus</div></div>
+</div>
+
+<h3>📦 Ce que contient chaque rubrique</h3>
+<ul>
+<li><b>Immobilisations corporelles</b> : terrains et bâtiments dont l'entreprise est <b>propriétaire</b>, installations-machines-outillage (IMO), matériel roulant, mobilier.</li>
+<li><b>Stocks</b> : matières premières, marchandises, produits finis.</li>
+<li><b>Créances à un an au plus</b> : ce que les clients — et tout autre débiteur (associé, fisc) — doivent à l'entreprise, échéance dans les 12 mois.</li>
+<li><b>Valeurs disponibles</b> : les sommes liquides, en compte bancaire et en caisse.</li>
+<li><b>Réserves</b> : un prolongement de l'apport, constitué de bénéfices <b>non distribués</b> aux associés.</li>
+<li><b>Dettes</b> : envers les banquiers, fournisseurs, le fisc, la TVA, le personnel — classées à <b>plus d'un an</b> (long terme) et à <b>un an au plus</b> (court terme).</li>
+</ul>
+
+<h3>⚡ Mise à jour 2026 — la réforme CSA</h3>
+<p>Depuis l'entrée en vigueur du CSA le <b>1<sup>er</sup> mai 2019</b>, le droit belge distingue deux familles :</p>
+<ul>
+<li><b>Sociétés à capital</b> — principalement la <b>SA</b>. Le capital est un montant fixé dans les statuts, garantie pour les créanciers : on n'y touche pas sans acte notarié.</li>
+<li><b>Sociétés sans capital</b> — la <b>SRL</b> et la <b>SC</b>. La notion de capital a <b>disparu</b> ; on parle d'<b>apport</b>.</li>
+</ul>
+<table>
+<tr><th></th><th>SA</th><th>SRL / SC</th></tr>
+<tr><td><b>Rubrique</b></td><td>I. Apport – A. Capital</td><td>I. Apport – A. Disponible / B. Indisponible</td></tr>
+<tr><td><b>Comptes</b></td><td class="num-c">100 Capital souscrit<br>1100 Primes d'émission</td><td class="num-c">110 Apport disponible hors capital<br>111 Apport indisponible hors capital</td></tr>
+</table>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — SA</div>
+Deux actionnaires constituent une SA et apportent 150.000 € en numéraire. L'acte prévoit un capital de 100.000 € et une prime d'émission de 50.000 €.
+<div class="tacc" style="margin-top:8px"><div class="tacc-h">Écriture au journal</div>
+<div style="padding:9px 11px;font-family:'Space Mono',monospace;font-size:.8rem;line-height:1.9">
+550 Établissements de crédit&nbsp;&nbsp;<span class="num-c">150.000</span><br>
+&nbsp;&nbsp;&nbsp;à 100 Capital souscrit&nbsp;&nbsp;<span class="num-c">100.000</span><br>
+&nbsp;&nbsp;&nbsp;à 1100 Primes d'émission&nbsp;&nbsp;<span class="num-c">50.000</span></div></div></div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — SRL : disponible ou indisponible ?</div>
+Deux associés constituent une SRL et apportent 150.000 €. Le traitement dépend <b>uniquement des statuts</b>.
+<p style="margin-top:8px"><b>Cas 1 — les statuts sont muets</b> → apport <b>disponible</b>. Remboursable par simple décision de l'assemblée générale (moyennant les tests de distribution) → <code>1109 Apport disponible hors capital – Autres</code>.</p>
+<p><b>Cas 2 — les statuts déclarent l'apport indisponible</b> → tout remboursement exigera une modification des statuts par acte notarié → <code>1119 Apport indisponible hors capital – Autres</code>.</p>
+<p><b>Cas 3 — une ancienne SPRL devenue SRL</b> : le capital et la réserve légale existants ont été transférés <b>de plein droit</b> en apport indisponible (1119) au 1<sup>er</sup> janvier 2020, sans aucune décision des associés.</p></div>
+
+<div class="callout c-key"><div class="ct">🔑 À retenir</div>
+Le compte <b>100</b> est réservé aux <b>SA</b>. En SRL, tout passe par la sous-classe <b>11</b>, et la question est toujours la même : <b>les statuts rendent-ils l'apport indisponible ou non ?</b></div>
+`,
+  questions:[
+  {t:'match', pts:16,
+   q:'Associe chaque rubrique du passif à sa classe de comptes.',
+   pairs:[
+     {l:'I. Apport (SRL / SC)',r:'11'},
+     {l:'II. Plus-values de réévaluation',r:'12'},
+     {l:'III. Réserves',r:'13'},
+     {l:'IV. Bénéfice (perte) reporté(e)',r:'14'},
+     {l:'V. Subsides en capital',r:'15'},
+     {l:'VII. Provisions et impôts différés',r:'16'},
+     {l:"VIII. Dettes à plus d'un an",r:'17'},
+     {l:"IX. Dettes à un an au plus",r:'42 – 48'}
+   ],
+   hint:"La numérotation n'est pas aléatoire : les rubriques du passif se suivent dans le même ordre que les sous-classes 10, 11, 12, 13… Repère d'abord la première et la dernière, le reste s'aligne tout seul.",
+   ex:"Les capitaux propres occupent 10 à 15 (apport, plus-values, réserves, résultat reporté, subsides), les provisions 16, les dettes à long terme 17. Les dettes à court terme, elles, quittent la classe 1 pour la classe 4 : <b>42 à 48</b>."},
+
+  {t:'qcm', pts:8,
+   q:"Deux associés constituent une SRL et apportent 150.000 € en numéraire. Les statuts ne disent rien de particulier sur cet apport. Quel compte faut-il créditer ?",
+   opts:['100 Capital souscrit','1109 Apport disponible hors capital – Autres','1119 Apport indisponible hors capital – Autres','1300 Réserve'],
+   a:1,
+   hint:"Deux vérifications successives : (1) s'agit-il d'une société avec ou sans capital ? (2) les statuts imposent-ils une contrainte de remboursement ? Que se passe-t-il quand un texte ne dit rien ?",
+   ex:"Une SRL est une société <b>sans capital</b> : le compte 100 est exclu d'office. Comme les statuts sont muets, aucune contrainte ne pèse sur le remboursement : l'apport est <b>disponible</b> → <code>1109</code>. L'AG pourra décider de le rembourser, moyennant les tests de distribution."},
+
+  {t:'qcm', pts:8,
+   q:"Mêmes associés, même SRL, même 150.000 €. Mais cette fois les statuts déclarent l'apport indisponible pour rassurer la banque. Quel compte est crédité ?",
+   opts:['1100 Primes d\'émission','1109 Apport disponible hors capital – Autres','1119 Apport indisponible hors capital – Autres','100 Capital souscrit'],
+   a:2,
+   hint:"Le montant, la forme de société et la nature de l'apport n'ont pas changé. Une seule chose a changé — et elle change un seul chiffre du numéro de compte.",
+   ex:"L'indisponibilité statutaire signifie que tout remboursement exigera une <b>modification des statuts par acte notarié</b>. Comptablement, cela se traduit par <code>1119 Apport indisponible hors capital – Autres</code>. Retiens la logique : 110x = disponible, 111x = indisponible."},
+
+  {t:'qcm', pts:8,
+   q:"Une SPRL constituée en 2010 avec un capital de 18.550 € est automatiquement devenue une SRL. Qu'est devenu son capital ?",
+   opts:[
+     "Il est resté au compte 100 : les anciennes sociétés conservent leur capital.",
+     "Il a été transféré de plein droit en apport indisponible (1119) au 1er janvier 2020.",
+     "Il a été transféré en apport disponible (1109), l'AG pouvant ensuite le bloquer.",
+     "Il a dû être remboursé aux associés avant le 1er mai 2019."],
+   a:1,
+   hint:"Le mot important est « de plein droit ». Cherche la réponse qui ne demande <b>aucune décision</b> des associés. Et souviens-toi que le législateur voulait protéger les créanciers de l'ancienne SPRL.",
+   ex:"Au <b>1<sup>er</sup> janvier 2020</b>, le capital et la réserve légale des anciennes SPRL ont basculé <b>de plein droit</b> — donc automatiquement, sans assemblée générale — vers le compte <code>1119 apport indisponible</code>. La logique : les créanciers comptaient sur ce capital comme garantie, il fallait maintenir cette protection."},
+
+  {t:'table', pts:16,
+   q:"Passe l'écriture de constitution de la SA : 150.000 € versés en banque, dont 100.000 € de capital et 50.000 € de prime d'émission.",
+   sub:"Choisis le compte, puis inscris le montant dans la bonne colonne. Laisse vide la colonne inutilisée.<br>Convention comptable : inscris d'abord les comptes <b style='color:var(--debit)'>débités</b>, puis les comptes <b style='color:var(--credit)'>crédités</b>. L'ordre des lignes n'est toutefois pas pénalisé.",
+   anyOrder:true,
+   cols:['Compte','Débit','Crédit'],
+   selOpts:['—','100 Capital souscrit','1100 Primes d\'émission','1109 Apport disponible','550 Établissements de crédit','4400 Fournisseurs'],
+   rows:[
+     [{k:'sel',a:'550 Établissements de crédit'},{k:'num',a:150000},{k:'num',a:null}],
+     [{k:'sel',a:'100 Capital souscrit'},{k:'num',a:null},{k:'num',a:100000}],
+     [{k:'sel',a:'1100 Primes d\'émission'},{k:'num',a:null},{k:'num',a:50000}]
+   ],
+   hint:"Commence par la première ligne : l'argent arrive quelque part, c'est le bien qui augmente. Ensuite, les deux lignes suivantes expliquent d'où il vient — et la somme des crédits doit égaler le débit.",
+   ex:"L'argent entre en banque : <code>550</code> est <b>débité</b> de 150.000 (un compte d'actif augmente au débit). En contrepartie, deux ressources sont créées et donc <b>créditées</b> : <code>100 Capital souscrit</code> 100.000 et <code>1100 Primes d'émission</code> 50.000. Σ débits = Σ crédits = 150.000."},
+
+  {t:'multi', pts:10,
+   q:"Que trouve-t-on dans la rubrique « III. Immobilisations corporelles » ?",
+   opts:['Les terrains et bâtiments dont l\'entreprise est propriétaire','Les installations, machines et outillages (IMO)','Le stock de marchandises','Le matériel roulant','Les créances sur les clients','Le mobilier'],
+   a:[0,1,3,5],
+   hint:"Corporel = qui a un corps, qu'on peut toucher. Mais attention : deux des propositions sont bien tangibles ou bien réelles, et pourtant elles ont leur propre rubrique. À quoi sert un bien immobilisé, par rapport à un stock ?",
+   ex:"Les immobilisations corporelles sont les biens <b>durables</b> (plus d'un an) que l'entreprise utilise pour travailler : terrains et bâtiments en propriété, IMO, matériel roulant, mobilier. Le stock de marchandises est destiné à être <b>revendu</b> (rubrique VI), et les créances clients ne sont pas des biens matériels (rubrique VII)."},
+
+  {t:'vf', pts:6,
+   q:"« Une SRL peut utiliser le compte 100 Capital souscrit si ses associés le décident en assemblée générale. »",
+   a:1,
+   hint:"Est-ce une question de choix des associés, ou une question de nature juridique de la société ? Une AG peut-elle décider de créer une notion que la loi a supprimée ?",
+   ex:"<b>Faux.</b> La SRL est par nature une société <b>sans capital</b> depuis le CSA : la notion a purement et simplement disparu pour elle. Aucune décision d'AG ne peut la ressusciter. Le compte 100 est <b>réservé aux SA</b> ; en SRL, tout passe par la sous-classe 11."},
+
+  {t:'qcm', pts:8,
+   q:"Un caissier compte 340 € dans la caisse et le relevé bancaire indique 12.660 €. Dans quelle rubrique du bilan ces 13.000 € apparaissent-ils ?",
+   opts:['VI. Stocks','VII. Créances à un an au plus','IX. Valeurs disponibles','I. Apport'],
+   a:2,
+   hint:"Le mot-clé est « liquide ». Ces sommes sont-elles dues par quelqu'un (créance), ou déjà entre les mains de l'entreprise, immédiatement utilisables ?",
+   ex:"Les <b>valeurs disponibles</b> (rubrique A.IX, comptes 54-58, dont 5500 Banque et 5700 Caisse) regroupent les sommes <b>liquides</b> en compte bancaire et en caisse. Une créance, elle, est de l'argent que l'entreprise n'a pas encore reçu."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 3 */
+{
+  id:3, icon:'🎬', title:'Le compte de résultats',
+  sub:'Des ventes au bénéfice : la cascade des résultats',
+  goal:'Suivre la construction du résultat, rubrique par rubrique, et classer correctement une charge.',
+  theory:`
+<h3>🎬 Confronter les produits et les charges</h3>
+<p>Le compte de résultats confronte, sur la durée d'un exercice comptable, les <b>produits</b> (ce que l'activité rapporte) et les <b>charges</b> (ce qu'elle coûte). La différence donne le <b>résultat</b>.</p>
+
+<table>
+<tr><th>N°</th><th>Rubrique</th><th>Signe</th><th>Classe</th></tr>
+<tr><td><b>I.</b></td><td>VENTES ET PRESTATIONS (chiffre d'affaires)</td><td style="color:var(--accent)">+</td><td class="num-c">70 – 74</td></tr>
+<tr><td><b>II.</b></td><td>CHARGES D'EXPLOITATION (coût des ventes)</td><td style="color:var(--error)">−</td><td class="num-c">60 – 64</td></tr>
+<tr><td></td><td style="padding-left:18px">A. approvisionnements — 1. achats · 2. variation de stock</td><td></td><td class="num-c">60</td></tr>
+<tr><td></td><td style="padding-left:18px">B. services et biens divers (SBD = frais généraux)</td><td></td><td class="num-c">61</td></tr>
+<tr><td></td><td style="padding-left:18px">C. rémunérations et charges sociales</td><td></td><td class="num-c">62</td></tr>
+<tr><td></td><td style="padding-left:18px">D, E &amp; F. amortissements, réductions de valeur et provisions</td><td></td><td class="num-c">63</td></tr>
+<tr><td></td><td style="padding-left:18px">G. autres charges d'exploitation</td><td></td><td class="num-c">64</td></tr>
+<tr><td><b>III.</b></td><td><b>RÉSULTAT D'EXPLOITATION (= I − II)</b></td><td></td><td></td></tr>
+<tr><td><b>IV.</b></td><td>PRODUITS FINANCIERS</td><td style="color:var(--accent)">+</td><td class="num-c">75</td></tr>
+<tr><td><b>V.</b></td><td>CHARGES FINANCIÈRES</td><td style="color:var(--error)">−</td><td class="num-c">65</td></tr>
+<tr><td><b>VI.</b></td><td><b>RÉSULTAT AVANT IMPÔTS (= III + IV − V)</b></td><td></td><td></td></tr>
+<tr><td><b>VII.</b></td><td>IMPÔTS SUR LE RÉSULTAT</td><td style="color:var(--error)">−</td><td class="num-c">67 – 77</td></tr>
+<tr><td><b>VIII.</b></td><td><b>RÉSULTAT DE L'EXERCICE (= VI − VII)</b></td><td></td><td></td></tr>
+</table>
+
+<h3>💶 Le contenu des principales rubriques</h3>
+<ul>
+<li>Le <b>chiffre d'affaires (CA)</b> est le total <b>HTVA</b> des ventes et prestations. Surtout ne pas confondre CA et <b>recettes</b> (l'argent effectivement encaissé), ni CA et <b>bénéfice</b> (ce qui reste après toutes les charges).</li>
+<li>Les <b>achats</b> (HTVA) concernent les matières premières et les marchandises.</li>
+<li>Les <b>frais généraux ou SBD</b> (services et biens divers, HTVA, compte 61) : loyer des bâtiments professionnels et entretien courant, entretien du matériel, électricité-chauffage-eau, frais de bureau-téléphone-courrier, déplacements, publicité, frais de réception et de représentation, honoraires des tiers (comptable, avocat), assurances…</li>
+<li>Les <b>rémunérations et charges sociales</b> (62) : salaires, primes et avantages versés au personnel, plus les cotisations de sécurité sociale (ONSS, assurance-loi) payées par l'employeur.</li>
+<li>Les <b>amortissements</b> (63) : la prise en charge de l'<b>usure</b> de l'immobilisé.</li>
+<li>Les <b>autres charges d'exploitation</b> (64) : les taxes <b>non liées au résultat</b> (taxes communales), les amendes…</li>
+<li>Les <b>charges financières</b> (65) : intérêts payés sur les emprunts, frais bancaires, escomptes accordés.</li>
+<li>Les <b>charges non récurrentes</b> (66) : par exemple une perte liée à un vol ou à un accident non couvert par une assurance.</li>
+</ul>
+
+<div class="callout c-warn"><div class="ct">⚡ Mise à jour 2026</div>
+Depuis l'<b>arrêté royal du 18 décembre 2015</b>, le résultat exceptionnel a <b>disparu</b> du compte de résultats. On ne parle plus de produits et charges « exceptionnels » mais de <b>produits non récurrents (76)</b> et <b>charges non récurrentes (66)</b>, rattachés soit au résultat d'exploitation, soit au résultat financier. Les anciennes rubriques VII et VIII ont été supprimées et l'ancien « IX. Résultat brut » est devenu « VI. Bénéfice (perte) de l'exercice avant impôts ». Le terme officiel est d'ailleurs « <b>bénéfice (perte)</b> » ; « résultat » reste employé au cours par commodité.</div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple chiffré</div>
+Une PME réalise 250.000 € de ventes. Ses achats s'élèvent à 120.000 €, ses SBD à 35.000 €, ses rémunérations à 60.000 € et ses amortissements à 12.000 €. Elle encaisse 500 € d'intérêts et paie 3.500 € d'intérêts d'emprunt. L'impôt s'élève à 5.000 €.
+<div style="font-family:'Space Mono',monospace;font-size:.8rem;line-height:2;margin-top:8px">
+III. Résultat d'exploitation = 250.000 − (120.000+35.000+60.000+12.000) = <span class="num-c">23.000</span><br>
+VI. Résultat avant impôts = 23.000 + 500 − 3.500 = <span class="num-c">20.000</span><br>
+VIII. Résultat de l'exercice = 20.000 − 5.000 = <span class="num-c">15.000</span></div>
+Note bien : le chiffre d'affaires est de 250.000 € mais le bénéfice n'est que de 15.000 €. Confondre les deux, c'est se tromper d'un facteur 16.</div>
+`,
+  questions:[
+  {t:'match', pts:16,
+   q:'Associe chaque rubrique du compte de résultats à sa classe de comptes.',
+   pairs:[
+     {l:'Ventes et prestations',r:'70 – 74'},
+     {l:'Approvisionnements et marchandises',r:'60'},
+     {l:'Services et biens divers (SBD)',r:'61'},
+     {l:'Rémunérations et charges sociales',r:'62'},
+     {l:'Dotations aux amortissements',r:'63'},
+     {l:"Autres charges d'exploitation",r:'64'},
+     {l:'Charges financières',r:'65'},
+     {l:'Produits financiers',r:'75'},
+     {l:'Impôts sur le résultat',r:'67'}
+   ],
+   hint:"Les charges d'exploitation se suivent dans l'ordre du compte de résultats : 60, 61, 62, 63, 64. Et pour les produits, il existe une symétrie : la charge financière est en 65, alors le produit financier est en… ?",
+   ex:"Les charges d'exploitation occupent 60 à 64, dans l'ordre exact de la rubrique II (A à G). Ensuite 65 = charges financières, avec son miroir 75 = produits financiers. Les impôts sur le résultat sont en 67, avec leur miroir 77 (régularisations d'impôts)."},
+
+  {t:'order', pts:12,
+   q:"Reconstitue la cascade du compte de résultats : clique les étapes dans l'ordre de calcul.",
+   items:[
+     'Ventes et prestations',
+     "Charges d'exploitation",
+     "Résultat d'exploitation",
+     'Produits financiers − Charges financières',
+     'Résultat avant impôts',
+     'Impôts sur le résultat',
+     "Résultat de l'exercice"
+   ],
+   hint:"Le compte de résultats se lit du haut vers le bas, du plus « métier » au plus « fiscal ». Quel résultat intermédiaire doit être connu avant de pouvoir ajouter les éléments financiers ?",
+   ex:"On part du chiffre d'affaires, on retire les charges d'exploitation pour obtenir le <b>résultat d'exploitation</b> (la performance du métier). On ajoute ensuite le financier pour le <b>résultat avant impôts</b>, puis on déduit l'impôt pour arriver au <b>résultat de l'exercice</b>, celui qui sera affecté (réserves, report, dividende)."},
+
+  {t:'table', pts:16,
+   q:"Reprends la PME de l'exemple, mais avec de nouveaux chiffres. Ventes 400.000 € · achats 210.000 € · SBD 48.000 € · rémunérations 95.000 € · amortissements 17.000 € · produits financiers 1.200 € · charges financières 6.200 € · impôts 6.000 €.",
+   sub:"Calcule les trois résultats intermédiaires.",
+   cols:['Ligne du compte de résultats','Montant (€)'],
+   rows:[
+     [{k:'txt',v:"III. Résultat d'exploitation"},{k:'num',a:30000}],
+     [{k:'txt',v:'VI. Résultat avant impôts'},{k:'num',a:25000}],
+     [{k:'txt',v:"VIII. Résultat de l'exercice"},{k:'num',a:19000}]
+   ],
+   hint:"Additionne d'abord <b>toutes</b> les charges d'exploitation avant de soustraire — il y en a quatre, pas trois. Ensuite, le financier s'ajoute et se retire, et l'impôt vient toujours en dernier. Tu peux taper directement ton calcul dans la case (ex. : 400000-210000-48000).",
+   ex:"III = 400.000 − (210.000 + 48.000 + 95.000 + 17.000) = <b>30.000 €</b>.<br>VI = 30.000 + 1.200 − 6.200 = <b>25.000 €</b>.<br>VIII = 25.000 − 6.000 = <b>19.000 €</b>. L'amortissement est bien une charge d'exploitation (63), même si aucun euro ne sort de la banque cette année-là."},
+
+  {t:'classify', pts:14,
+   q:"Chaque dépense doit trouver sa rubrique. Classe-les.",
+   buckets:["EXPLOITATION 61 (SBD)","AUTRES CHARGES 64","FINANCIÈRES 65","NON RÉCURRENTES 66"],
+   items:[
+     {x:"Loyer de l'atelier",b:0},{x:"Honoraires du comptable",b:0},
+     {x:"Facture d'électricité",b:0},{x:"Prime d'assurance incendie",b:0},
+     {x:'Taxe communale sur les enseignes',b:1},{x:'Amende de roulage',b:1},
+     {x:"Intérêts sur l'emprunt bancaire",b:2},{x:'Frais de tenue de compte',b:2},
+     {x:'Perte due à un vol non assuré',b:3}
+   ],
+   hint:"Trois questions dans l'ordre : (1) est-ce lié au fonctionnement normal du métier ? (2) est-ce un coût de l'argent emprunté ? (3) est-ce un événement qui n'a aucune raison de se reproduire ? Et attention : une taxe qui ne dépend pas du bénéfice n'est pas un impôt sur le résultat.",
+   ex:"Le <b>61 (SBD)</b> regroupe les frais généraux courants : loyer, honoraires, énergie, assurances. Le <b>64</b> accueille les taxes non liées au résultat et les amendes. Le <b>65</b> concerne le coût de l'argent : intérêts, frais bancaires. Le <b>66</b> est réservé à l'accidentel : un vol non couvert par une assurance."},
+
+  {t:'vf', pts:6,
+   q:"« Le chiffre d'affaires correspond au total TVA comprise des ventes de l'entreprise. »",
+   a:1,
+   hint:"À qui appartient la TVA que tu factures à ton client : à toi, ou à l'État ? Si elle ne t'appartient pas, peut-elle faire partie de ce que ton activité te rapporte ?",
+   ex:"<b>Faux : le CA est le total HTVA.</b> La TVA facturée au client ne vous appartient pas : vous la percevez <b>pour l'État</b> et la reverserez. Elle ne va donc jamais en 7000 mais en 4510 (une dette). Le comptable raisonne <b>toujours en HTVA</b> pour les charges et les produits."},
+
+  {t:'qcm', pts:8,
+   q:"Un commerçant a facturé 90.000 € HTVA cette année, mais ses clients ne lui ont versé que 72.000 €. Après toutes ses charges, il lui reste 8.000 €. Quel est son chiffre d'affaires ?",
+   opts:['72.000 € — seul l\'argent réellement encaissé compte','90.000 € — le total facturé hors TVA','8.000 € — ce qui reste au bout du compte','18.000 € — la différence entre les deux'],
+   a:1,
+   hint:"Trois notions différentes se cachent dans cet énoncé : ce qui a été facturé, ce qui a été encaissé, ce qui reste. Laquelle des trois porte le nom de « chiffre d'affaires » ?",
+   ex:"Le <b>CA = 90.000 €</b>, le total HTVA <b>facturé</b>, indépendamment du paiement. Les 72.000 € sont les <b>recettes</b> (encaissements) — les 18.000 € restants sont une créance client (4000). Les 8.000 € sont le <b>bénéfice</b>. Trois notions, trois mots : ne les confondez jamais."},
+
+  {t:'fill', pts:12,
+   q:"Complète le rappel sur la réforme du compte de résultats.",
+   text:"Depuis l'arrêté royal du 18 décembre 2015, le résultat {0} a disparu du compte de résultats. On parle désormais de charges {1} (compte {2}) et de produits non récurrents (compte {3}). Le terme officiel de la dernière ligne n'est plus « résultat » mais « {4} ».",
+   bank:['exceptionnel','non récurrentes','66','76','bénéfice (perte)','d\'exploitation','financières','65','75','chiffre d\'affaires'],
+   a:['exceptionnel','non récurrentes','66','76','bénéfice (perte)'],
+   hint:"Les comptes non récurrents se sont glissés juste après leurs voisins financiers dans la numérotation : 65 puis 66 du côté des charges, 75 puis 76 du côté des produits.",
+   ex:"L'ancien « exceptionnel » est devenu « <b>non récurrent</b> » : charges non récurrentes en <b>66</b>, produits non récurrents en <b>76</b>. Ils ne forment plus une section séparée mais se rattachent à l'exploitation ou au financier. Et l'intitulé légal de la dernière ligne est « <b>bénéfice (perte)</b> de l'exercice »."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 4 */
+{
+  id:4, icon:'🗂️', title:'Le PCMN',
+  sub:'7 classes, un numéro, une position',
+  goal:'Retrouver la classe, la nature et la position au bilan de n\'importe quel compte.',
+  theory:`
+<h3>🔗 Du compte comptable au PCMN</h3>
+<p>Tous les éléments du bilan et du compte de résultats sont identifiés par un <b>compte comptable</b> (ex. : <code>5500 Banque</code>). L'ensemble de ces comptes est repris dans un <b>plan comptable</b>. En Belgique, sa structure est imposée : c'est le <b>PCMN</b>, plan comptable minimum normalisé (AR du 21 octobre 2018).</p>
+<p>Le PCMN fait mieux que numéroter : il précise aussi la <b>position</b> de chaque compte dans le bilan ou le compte de résultats.</p>
+<ul>
+<li><code>2400 Mobilier → A.III.C</code> signifie : le solde (débiteur) du compte mobilier sera repris à l'<b>A</b>ctif, rubrique <b>III</b> Immobilisations corporelles, sous-rubrique <b>C</b> mobilier et matériel roulant.</li>
+<li><code>6040 Achats de marchandises → R.II.A.1</code> signifie : <b>R</b>ésultat, rubrique <b>II</b> coût des ventes, <b>A</b> approvisionnements, <b>1</b> achats.</li>
+</ul>
+
+<h3>🔢 Les 7 classes</h3>
+<div class="tw">
+  <div><div class="tw-h">BILAN — COMPTES D'ACTIF</div>
+  <div style="font-size:.84rem;line-height:1.85"><b>2</b> immobilisés<br><b>3</b> stocks<br><b>4 (40 &amp; 41)</b> créances à un an au plus<br><b>5</b> valeurs disponibles et placements</div></div>
+  <div><div class="tw-h">BILAN — COMPTES DE PASSIF</div>
+  <div style="font-size:.84rem;line-height:1.85"><b>1</b> apport, fonds propres, provisions et dettes à plus d'un an<br><b>4 (42 à 48)</b> dettes à un an au plus</div></div>
+</div>
+<div class="tw" style="margin-top:10px">
+  <div><div class="tw-h">RÉSULTATS — CHARGES</div><div style="font-size:.84rem"><b>6</b> charges</div></div>
+  <div><div class="tw-h">RÉSULTATS — PRODUITS</div><div style="font-size:.84rem"><b>7</b> produits</div></div>
+</div>
+
+<h4>Le tableau à connaître par cœur</h4>
+<table>
+<tr><th>Classe</th><th>LT / CT</th><th>Actif / Passif</th></tr>
+<tr><td class="num-c">1</td><td>LT</td><td>PASSIF</td></tr>
+<tr><td class="num-c">2</td><td>LT</td><td>ACTIF</td></tr>
+<tr><td class="num-c">3</td><td>CT</td><td>ACTIF</td></tr>
+<tr><td class="num-c">4</td><td>CT</td><td>ACTIF (40-41 et 49) <b>+</b> PASSIF (42-48 et 49)</td></tr>
+<tr><td class="num-c">5</td><td>CT</td><td>ACTIF</td></tr>
+</table>
+<div class="callout c-key"><div class="ct">🔑 Le cas particulier de la classe 4</div>
+La classe 4 est la <b>seule</b> à se trouver des deux côtés du bilan : <b>40-41 à l'actif</b> (créances : clients, TVA à récupérer) et <b>42-48 au passif</b> (dettes : fournisseurs, TVA à payer, ONSS). Le compte 49 (régularisations) existe des deux côtés.</div>
+<div class="callout c-warn"><div class="ct">⚡ Nuance 2026</div>
+La classe 1 ne contient pas <b>que</b> des dettes à long terme. Elle regroupe les <b>capitaux propres</b> (apport, réserves, résultat reporté, subsides), les <b>provisions</b> et les <b>dettes à plus d'un an</b>. Les capitaux propres ne sont pas remboursables à échéance : les qualifier de « long terme » est une commodité pédagogique, pas une définition.</div>
+<div class="callout c-note"><div class="ct">ℹ️ Charges et produits</div>
+Les comptes de charges et de produits sont <b>toujours de court terme</b> : ils sont remis à zéro pour l'année suivante. Interdiction de mélanger des charges ou des produits d'une année à l'autre.</div>
+
+<h3>📖 Extrait du plan comptable utilisé au cours</h3>
+<table>
+<tr><th>N°</th><th>Intitulé</th><th>Position</th></tr>
+<tr><td class="num-c">1000</td><td>Capital (sociétés avec capital : SA)</td><td>P.I.A.</td></tr>
+<tr><td class="num-c">110 / 111</td><td>Apport hors capital — disponible / indisponible (SRL, SC)</td><td>P.I.B.</td></tr>
+<tr><td class="num-c">1300</td><td>Réserve</td><td>P.III.</td></tr>
+<tr><td class="num-c">17**</td><td>Dettes à plus d'un an (long terme)</td><td>P.VIII.</td></tr>
+<tr><td class="num-c">2220</td><td>Immeubles (terrains bâtis)</td><td>A.III.A.</td></tr>
+<tr><td class="num-c">2300</td><td>Installations, machines, outillage (IMO)</td><td>A.III.B.</td></tr>
+<tr><td class="num-c">2400</td><td>Mobilier</td><td>A.III.C.</td></tr>
+<tr><td class="num-c">2410</td><td>Matériel roulant</td><td>A.III.C.</td></tr>
+<tr><td class="num-c">3400</td><td>Stock marchandises</td><td>A.VI.</td></tr>
+<tr><td class="num-c">4000</td><td>Clients</td><td>A.VII.A.</td></tr>
+<tr><td class="num-c">4110</td><td>TVA à récupérer (TVA déductible)</td><td>A.VII.B.</td></tr>
+<tr><td class="num-c">4400</td><td>Fournisseurs</td><td>P.IX.C.</td></tr>
+<tr><td class="num-c">4510</td><td>TVA à payer (TVA due)</td><td>P.IX.E.</td></tr>
+<tr><td class="num-c">4520</td><td>Impôts à payer</td><td>P.IX.E.</td></tr>
+<tr><td class="num-c">5500</td><td>Banque</td><td>A.IX.</td></tr>
+<tr><td class="num-c">5700</td><td>Caisse</td><td>A.IX.</td></tr>
+<tr><td class="num-c">5800</td><td>Virements internes</td><td>—</td></tr>
+<tr><td class="num-c">6040</td><td>Achats marchandises</td><td>R.II.A.1.</td></tr>
+<tr><td class="num-c">6094</td><td>Variation de stocks (marchandises)</td><td>R.II.A.2.</td></tr>
+<tr><td class="num-c">61**</td><td>Services et biens divers</td><td>R.II.B.</td></tr>
+<tr><td class="num-c">62**</td><td>Rémunérations, charges sociales et pensions</td><td>R.II.C.</td></tr>
+<tr><td class="num-c">6302</td><td>Dotations aux amortissements sur immob. corporelles</td><td>R.II.D.</td></tr>
+<tr><td class="num-c">6400</td><td>Autres charges d'exploitation</td><td>R.II.G.</td></tr>
+<tr><td class="num-c">6500</td><td>Charges financières</td><td>R.V.</td></tr>
+<tr><td class="num-c">6700</td><td>Impôts et versements anticipés</td><td>R.VII.</td></tr>
+<tr><td class="num-c">7000</td><td>Chiffre d'affaires</td><td>R.I.A.</td></tr>
+<tr><td class="num-c">7500</td><td>Produits financiers</td><td>R.IV.</td></tr>
+</table>
+`,
+  questions:[
+  {t:'table', pts:16,
+   q:"Complète le tableau des classes du bilan.",
+   cols:['Classe','LT / CT','ACTIF / PASSIF'],
+   selOpts:['—','LT','CT','ACTIF','PASSIF','ACTIF + PASSIF'],
+   rows:[
+     [{k:'txt',v:'1'},{k:'sel',a:'LT'},{k:'sel',a:'PASSIF'}],
+     [{k:'txt',v:'2'},{k:'sel',a:'LT'},{k:'sel',a:'ACTIF'}],
+     [{k:'txt',v:'3'},{k:'sel',a:'CT'},{k:'sel',a:'ACTIF'}],
+     [{k:'txt',v:'4'},{k:'sel',a:'CT'},{k:'sel',a:'ACTIF + PASSIF'}],
+     [{k:'txt',v:'5'},{k:'sel',a:'CT'},{k:'sel',a:'ACTIF'}]
+   ],
+   hint:"Les deux premières classes sont les « durables » : capitaux et immobilisés. Les trois suivantes tournent dans l'année. Et une seule classe refuse de choisir son camp entre l'actif et le passif — laquelle contient à la fois des clients et des fournisseurs ?",
+   ex:"Classe 1 = LT/passif (capitaux propres, provisions, dettes &gt; 1 an). Classe 2 = LT/actif (immobilisés). Classes 3 et 5 = CT/actif (stocks, disponible). Classe 4 = CT et <b>des deux côtés</b> : 40-41 créances à l'actif, 42-48 dettes au passif."},
+
+  {t:'table', pts:10,
+   q:"Et pour le compte de résultats ?",
+   cols:['Classe','LT / CT','CHARGE / PRODUIT'],
+   selOpts:['—','LT','CT','CHARGE','PRODUIT'],
+   rows:[
+     [{k:'txt',v:'6'},{k:'sel',a:'CT'},{k:'sel',a:'CHARGE'}],
+     [{k:'txt',v:'7'},{k:'sel',a:'CT'},{k:'sel',a:'PRODUIT'}]
+   ],
+   hint:"Que devient le solde d'un compte d'achats au 1er janvier de l'année suivante ? S'il repart de zéro chaque année, peut-il être qualifié de long terme ?",
+   ex:"Les comptes de charges (6) et de produits (7) sont <b>toujours de court terme</b> : ils sont soldés en fin d'exercice et repartent de zéro. Il est interdit de mélanger les charges ou produits d'une année sur l'autre — c'est le principe de l'<b>indépendance des exercices</b>."},
+
+  {t:'match', pts:16,
+   q:'Retrouve le numéro de chaque compte dans le plan comptable du cours.',
+   pairs:[
+     {l:'Banque',r:'5500'},{l:'Caisse',r:'5700'},
+     {l:'Clients',r:'4000'},{l:'Fournisseurs',r:'4400'},
+     {l:'TVA à récupérer (déductible)',r:'4110'},{l:'TVA à payer (due)',r:'4510'},
+     {l:'Achats de marchandises',r:'6040'},{l:"Chiffre d'affaires",r:'7000'},
+     {l:'Installations, machines, outillage',r:'2300'},{l:'Mobilier',r:'2400'},
+     {l:'Stock marchandises',r:'3400'}
+   ],
+   hint:"Commence par le premier chiffre : il te donne la classe, donc élimine déjà les trois quarts des possibilités. Ensuite, souviens-toi que la TVA à récupérer est une créance (donc 41…) et la TVA à payer une dette (donc 45…).",
+   ex:"Retiens les couples symétriques : côté achat <code>6040 / 4110 / 4400</code>, côté vente <code>7000 / 4510 / 4000</code>. Le reste suit la logique des classes : 2300 et 2400 sont des immobilisés, 3400 un stock, 5500 et 5700 du disponible."},
+
+  {t:'qcm', pts:8,
+   q:"Le PCMN indique : 2400 Mobilier → A.III.C. Comment lis-tu ce code ?",
+   opts:[
+     "Actif, rubrique III Immobilisations corporelles, sous-rubrique C mobilier et matériel roulant",
+     "Actif, rubrique III Stocks, sous-rubrique C mobilier",
+     "Achats, rubrique III, catégorie C",
+     "Amortissements, rubrique III, classe C"],
+   a:0,
+   hint:"Décompose le code lettre par lettre : la première lettre désigne le document, le chiffre romain la rubrique, la dernière lettre la sous-rubrique. Où as-tu déjà rencontré la rubrique III du bilan ?",
+   ex:"<b>A</b> = Actif · <b>III</b> = Immobilisations corporelles · <b>C</b> = mobilier et matériel roulant. C'est pour cela que 2400 (mobilier) et 2410 (matériel roulant) partagent la <b>même</b> position A.III.C : ils se retrouvent sur la même ligne du bilan publié."},
+
+  {t:'qcm', pts:8,
+   q:"Et 6040 Achats de marchandises → R.II.A.1 ?",
+   opts:[
+     "Résultat, rubrique II ventes, sous-rubrique A, ligne 1",
+     "Résultat, rubrique II coût des ventes, A approvisionnements, 1 achats",
+     "Résultat, rubrique II, A amortissements, 1 achats",
+     "Recettes, rubrique II, A achats, 1 marchandises"],
+   a:1,
+   hint:"La rubrique II du compte de résultats porte un nom précis que tu as vu au niveau 3, et sa sous-rubrique A se divise en deux lignes numérotées. Que contient la ligne 2 de cette sous-rubrique A ?",
+   ex:"<b>R</b> = Résultat · <b>II</b> = charges d'exploitation (coût des ventes) · <b>A</b> = approvisionnements · <b>1</b> = achats. La ligne <b>A.2</b>, elle, accueille la <b>variation de stock</b> (compte 6094) : achats et variation de stock forment ensemble le coût des marchandises vendues."},
+
+  {t:'multi', pts:10,
+   q:"Quels comptes de la classe 4 se trouvent à l'ACTIF du bilan ?",
+   opts:['4000 Clients','4110 TVA à récupérer','4400 Fournisseurs','4510 TVA à payer','416 Créances diverses à un an au plus','48 Dettes diverses'],
+   a:[0,1,4],
+   hint:"Un seul critère tranche : est-ce de l'argent que l'on <b>attend</b> ou de l'argent que l'on <b>doit</b> ? Regarde aussi les deux premiers chiffres : où se situe la frontière dans la classe 4 ?",
+   ex:"La frontière passe entre 41 et 42 : <b>40-41 = créances (actif)</b>, <b>42-48 = dettes (passif)</b>. Clients (4000), TVA à récupérer (4110) et créances diverses (416) sont donc des créances sur des tiers. Fournisseurs (4400), TVA à payer (4510) et dettes diverses (48) sont des dettes."},
+
+  {t:'vf', pts:6,
+   q:"« La classe 1 ne contient que des dettes à long terme. »",
+   a:1,
+   hint:"Repense au niveau 2 : quelles rubriques du passif portaient les numéros 10 à 16 ? Est-ce que l'apport des associés est une dette remboursable à une échéance fixée ?",
+   ex:"<b>Faux.</b> La classe 1 regroupe les <b>capitaux propres</b> (apport 10-11, plus-values 12, réserves 13, résultat reporté 14, subsides 15), les <b>provisions</b> (16) et seulement <b>ensuite</b> les dettes à plus d'un an (17). Les capitaux propres ne sont pas remboursables à échéance : les classer en « long terme » est une commodité pédagogique."},
+
+  {t:'qcm', pts:8,
+   q:"Un commerçant retire 500 € de son compte bancaire pour alimenter la caisse du magasin. Quel compte a été créé au PCMN pour ce type d'opération ?",
+   opts:['4160 Créances diverses','5800 Virements internes','5700 Caisse uniquement','6400 Autres charges d\'exploitation'],
+   a:1,
+   hint:"L'argent quitte la banque un jour, mais n'arrive parfois en caisse que le lendemain — et les deux mouvements sont justifiés par deux pièces différentes. De quoi a-t-on besoin pour faire le pont entre les deux ?",
+   ex:"Le compte <code>5800 Virements internes</code> sert de <b>compte de passage</b> entre deux comptes financiers de la même entreprise. Il évite d'enregistrer deux fois la même somme et se solde automatiquement dès que les deux pièces (extrait bancaire et pièce de caisse) sont enregistrées."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 5 */
+{
+  id:5, icon:'⚖️', title:'Débit & Crédit',
+  sub:'Le mécanisme des quatre catégories de comptes',
+  goal:'Savoir, pour n\'importe quel compte, de quel côté on inscrit une augmentation.',
+  theory:`
+<h3>📕 Qu'est-ce qu'un compte ?</h3>
+<p>Un compte est un tableau représentant une rubrique (ou une sous-rubrique) du bilan ou du compte de résultats, comportant deux colonnes : celle de gauche s'appelle <b>DÉBIT (D)</b>, celle de droite <b>CRÉDIT (C)</b>. Une des deux colonnes enregistre les augmentations, l'autre les diminutions ; <b>tout le problème est de savoir laquelle</b>.</p>
+<div class="callout c-note"><div class="ct">ℹ️ Rappel absolu</div>
+Toute écriture comptable s'appuie sur une <b>pièce justificative</b> : facture, note de crédit, extrait de compte, fiche de paie…</div>
+
+<h3>🎯 Le « truc » qui règle tout</h3>
+<div class="callout c-key"><div class="ct">🔑 Règle unique</div>
+LES AUGMENTATIONS SONT INSCRITES <b>DU CÔTÉ OÙ SE TROUVE LE COMPTE</b> DANS LE DOCUMENT (bilan ou compte de résultats).</div>
+<p>Autrement dit : il suffit de savoir si le compte est à gauche ou à droite dans son document, et le mécanisme se déduit tout seul.</p>
+<div class="tw">
+  <div><div class="tw-h">BILAN — ACTIF (à gauche)</div>
+  <div style="font-family:'Space Mono',monospace;font-size:.9rem"><span class="tdc-d">D +</span> &nbsp;&nbsp;&nbsp; <span class="tdc-c">C −</span></div>
+  <p style="font-size:.8rem;margin-top:5px">augmentations à gauche, par le <b>débit</b></p></div>
+  <div><div class="tw-h">BILAN — PASSIF (à droite)</div>
+  <div style="font-family:'Space Mono',monospace;font-size:.9rem"><span class="tdc-d">D −</span> &nbsp;&nbsp;&nbsp; <span class="tdc-c">C +</span></div>
+  <p style="font-size:.8rem;margin-top:5px">augmentations à droite, par le <b>crédit</b></p></div>
+</div>
+<div class="tw" style="margin-top:10px">
+  <div><div class="tw-h">RÉSULTATS — CHARGES (à gauche)</div>
+  <div style="font-family:'Space Mono',monospace;font-size:.9rem"><span class="tdc-d">D +</span> &nbsp;&nbsp;&nbsp; <span class="tdc-c">C −</span></div></div>
+  <div><div class="tw-h">RÉSULTATS — PRODUITS (à droite)</div>
+  <div style="font-family:'Space Mono',monospace;font-size:.9rem"><span class="tdc-d">D −</span> &nbsp;&nbsp;&nbsp; <span class="tdc-c">C +</span></div></div>
+</div>
+
+<h3>🧭 Synthèse : quatre catégories, deux schémas</h3>
+<table>
+<tr><th>Comptes</th><th>Débités</th><th>Crédités</th></tr>
+<tr><td><b>d'actif</b> et <b>de charge</b></td><td style="color:var(--accent)">des AUGMENTATIONS +</td><td style="color:var(--error)">des DIMINUTIONS −</td></tr>
+<tr><td><b>de passif</b> et <b>de produit</b></td><td style="color:var(--error)">des DIMINUTIONS −</td><td style="color:var(--accent)">des AUGMENTATIONS +</td></tr>
+</table>
+<p>Formulé autrement : les comptes d'<b>actif</b> et de <b>charge</b> sont <b>DÉBITEURS</b> ; les comptes de <b>passif</b> et de <b>produit</b> sont <b>CRÉDITEURS</b>.</p>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — les deux mécanismes</div>
+<div class="tgrid">
+<div class="tacc"><div class="tacc-h">5500 BANQUE (actif)</div><div class="tacc-b">
+<div><div class="tacc-s d">D +</div><div style="font-size:.78rem">↗ augmentation</div></div>
+<div><div class="tacc-s c">C −</div><div style="font-size:.78rem">↘ diminution</div></div></div></div>
+<div class="tacc"><div class="tacc-h">4400 FOURNISSEURS (passif)</div><div class="tacc-b">
+<div><div class="tacc-s d">D −</div><div style="font-size:.78rem">↘ diminution</div></div>
+<div><div class="tacc-s c">C +</div><div style="font-size:.78rem">↗ augmentation</div></div></div></div>
+</div></div>
+
+<h3>⚖️ La règle de l'équilibre</h3>
+<div class="callout c-key"><div class="ct">🔑 Partie double</div>
+QUAND ON DÉBITE UN COMPTE, IL FAUT EN CRÉDITER UN (OU PLUSIEURS) AUTRE(S) DU MÊME MONTANT, DE MANIÈRE À CE QUE LES DÉBITS ÉGALENT TOUJOURS LES CRÉDITS.</div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — HAIR STYLE, ouverture des comptes</div>
+Apport de 20.000 € en numéraire. C'est une <b>OD</b> (opération diverse).
+<div style="font-family:'Space Mono',monospace;font-size:.8rem;line-height:1.9;margin-top:8px">
+5500 Banque&nbsp;&nbsp;<span class="num-c">20.000</span><br>
+&nbsp;&nbsp;&nbsp;à 1000 Capital&nbsp;&nbsp;<span class="num-c">20.000</span><br>
+<span style="color:var(--text3)">— ouverture des comptes —</span></div>
+La banque (actif) augmente → débit. Le capital (passif) augmente → crédit. D 20.000 = C 20.000.</div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — payer un fournisseur</div>
+L'entreprise achète du matériel 8.000 € et du mobilier 3.500 € à crédit, puis paie la facture par virement.
+<p style="margin-top:6px"><b>1. La facture :</b> matériel et mobilier augmentent (D+), la dette fournisseur augmente (C+). 2300 D 8.000 · 2400 D 3.500 · 4400 C 11.500.</p>
+<p><b>2. Le paiement :</b> la banque diminue (C−) et la dette disparaît (D−). 4400 D 11.500 · 5500 C 11.500. Le compte fournisseur est alors <b>soldé</b>.</p></div>
+
+<h3>🧮 Calculer un solde</h3>
+<ul>
+<li><b>Comptes d'actif</b> : solde = ΣD+ − ΣC− → on obtient un <b>solde débiteur (SD)</b>.</li>
+<li><b>Comptes de passif</b> : solde = ΣC+ − ΣD− → on obtient un <b>solde créditeur (SC)</b>.</li>
+</ul>
+`,
+  questions:[
+  {t:'table', pts:14,
+   q:"Pour chaque catégorie de comptes, indique de quel côté on inscrit une AUGMENTATION.",
+   cols:['Catégorie de comptes','Augmentation','Le compte est donc…'],
+   selOpts:['—','Débit','Crédit','débiteur','créditeur'],
+   rows:[
+     [{k:'txt',v:"Compte d'ACTIF (ex. 5500 Banque)"},{k:'sel',a:'Débit'},{k:'sel',a:'débiteur'}],
+     [{k:'txt',v:'Compte de PASSIF (ex. 4400 Fournisseurs)'},{k:'sel',a:'Crédit'},{k:'sel',a:'créditeur'}],
+     [{k:'txt',v:'Compte de CHARGE (ex. 6040 Achats)'},{k:'sel',a:'Débit'},{k:'sel',a:'débiteur'}],
+     [{k:'txt',v:'Compte de PRODUIT (ex. 7000 Ventes)'},{k:'sel',a:'Crédit'},{k:'sel',a:'créditeur'}]
+   ],
+   hint:"Une seule règle suffit : les augmentations s'inscrivent du côté où le compte se trouve dans son document. Dessine mentalement le bilan, puis le compte de résultats, et regarde de quel côté est chaque catégorie.",
+   ex:"Actif et charges sont <b>à gauche</b> de leur document → ils augmentent au <b>débit</b> → ils sont <b>débiteurs</b>. Passif et produits sont <b>à droite</b> → ils augmentent au <b>crédit</b> → ils sont <b>créditeurs</b>. Quatre catégories, mais seulement deux comportements."},
+
+  {t:'classify', pts:14,
+   q:"Classe ces comptes selon leur nature de solde.",
+   buckets:['SOLDE DÉBITEUR (SD)','SOLDE CRÉDITEUR (SC)'],
+   items:[
+     {x:'5500 Banque',b:0},{x:'4000 Clients',b:0},{x:'2300 IMO',b:0},
+     {x:'6040 Achats de marchandises',b:0},{x:'4110 TVA à récupérer',b:0},{x:'3400 Stock marchandises',b:0},
+     {x:'4400 Fournisseurs',b:1},{x:'7000 Chiffre d\'affaires',b:1},{x:'1300 Réserve',b:1},
+     {x:'4510 TVA à payer',b:1},{x:'1000 Capital',b:1}
+   ],
+   hint:"Ne cherche pas à mémoriser onze cas. Identifie d'abord la catégorie (actif, passif, charge, produit) grâce au premier chiffre du compte, puis applique la règle des deux comportements.",
+   ex:"Débiteurs = actif (5500, 4000, 2300, 4110, 3400) + charges (6040). Créditeurs = passif (4400, 4510, 1000, 1300) + produits (7000). Le premier chiffre suffit presque toujours : 2, 3, 5, 6 → débiteur ; 1, 7 → créditeur ; classe 4 → il faut regarder le deuxième chiffre."},
+
+  {t:'qcm', pts:8,
+   q:"L'entreprise paie 11.500 € à son fournisseur par virement bancaire. Quelle écriture est correcte ?",
+   opts:[
+     '5500 Banque au débit 11.500 · 4400 Fournisseurs au crédit 11.500',
+     '4400 Fournisseurs au débit 11.500 · 5500 Banque au crédit 11.500',
+     '6040 Achats au débit 11.500 · 5500 Banque au crédit 11.500',
+     '4400 Fournisseurs au débit 11.500 · 4000 Clients au crédit 11.500'],
+   a:1,
+   hint:"Deux choses diminuent dans cette opération : l'argent en banque et la dette. Or diminuer un compte d'actif et diminuer un compte de passif ne se font pas du même côté. Attention aussi : l'achat a déjà été enregistré au moment de la facture.",
+   ex:"La dette (passif) <b>diminue</b> → elle est <b>débitée</b> : 4400 D 11.500. L'argent en banque (actif) <b>diminue</b> → il est <b>crédité</b> : 5500 C 11.500. Le compte 6040 n'intervient pas : la charge a été enregistrée lors de la réception de la facture, pas au paiement."},
+
+  {t:'table', pts:14,
+   q:"HAIR STYLE : passe l'écriture d'ouverture pour un apport de 20.000 € versés en banque.",
+   sub:"Convention comptable : inscris d'abord les comptes <b style='color:var(--debit)'>débités</b>, puis les comptes <b style='color:var(--credit)'>crédités</b>. L'ordre des lignes n'est toutefois pas pénalisé.",
+   anyOrder:true,
+   cols:['Compte','Débit','Crédit'],
+   selOpts:['—','1000 Capital','5500 Banque','4400 Fournisseurs','7000 Chiffre d\'affaires','6040 Achats'],
+   rows:[
+     [{k:'sel',a:'5500 Banque'},{k:'num',a:20000},{k:'num',a:null}],
+     [{k:'sel',a:'1000 Capital'},{k:'num',a:null},{k:'num',a:20000}]
+   ],
+   hint:"Deux comptes augmentent en même temps, mais ils ne sont pas dans la même colonne du bilan. Lequel est un bien de l'entreprise, lequel est l'origine de ce bien ?",
+   ex:"L'argent arrive en banque : compte d'<b>actif</b> qui augmente → <b>débit</b>. Le capital est la <b>ressource</b> qui a financé cette entrée : compte de <b>passif</b> qui augmente → <b>crédit</b>. Cette écriture, qui n'est ni un achat, ni une vente, ni un mouvement financier ordinaire, s'enregistre au journal des <b>OD</b>."},
+
+  {t:'num', pts:10, unit:'€',
+   q:"Le compte 5500 Banque présente un débit de 20.000 € (apport) et un crédit de 11.500 € (paiement du fournisseur). Quel est son solde ?",
+   a:8500,
+   hint:"Pour un compte d'actif, le solde se calcule dans un sens bien précis : le côté des augmentations moins le côté des diminutions. Lequel est lequel, ici ?",
+   ex:"Compte d'actif : solde = ΣD − ΣC = 20.000 − 11.500 = <b>8.500 € en solde débiteur (SD)</b>. Un compte d'actif a normalement un solde débiteur : si tu trouvais un solde créditeur sur un compte banque, cela signifierait que le compte est à découvert (ce qui, comptablement, en ferait une dette)."},
+
+  {t:'vf', pts:6,
+   q:"« Quand on débite un compte, il faut obligatoirement en créditer un ou plusieurs autres pour le même montant total. »",
+   a:0,
+   hint:"C'est le principe qui donne son nom à la comptabilité « en partie double ». Que se passerait-il pour l'égalité actif = passif si ce n'était pas le cas ?",
+   ex:"<b>Vrai.</b> C'est le principe de la <b>partie double</b> : Σ débits = Σ crédits, dans chaque écriture. Un débit peut avoir plusieurs contreparties au crédit (comme l'écriture d'achat 6040 + 4110 face à 4400), mais les totaux doivent s'équilibrer au centime près. C'est ce qui garantit que le bilan reste équilibré."},
+
+  {t:'qcm', pts:8,
+   q:"Un fournisseur accorde une ristourne et envoie une note de crédit de 200 € sur un achat de marchandises. Comment réagit le compte 608 « remises, ristournes et rabais obtenus » ?",
+   opts:[
+     "Il fonctionne comme un compte débiteur, comme tous les comptes de classe 6.",
+     "Il fonctionne comme un compte créditeur, alors qu'il est en classe 6.",
+     "Il ne s'utilise jamais : on annule directement le compte 6040.",
+     "Il s'enregistre en classe 7, puisqu'il enrichit l'entreprise."],
+   a:1,
+   hint:"Une ristourne obtenue réduit le coût d'achat. Si le compte d'achat augmente au débit, dans quel sens doit aller un compte qui vient le <b>diminuer</b> ?",
+   ex:"Le compte <code>608</code> est un compte de classe 6 <b>correcteur</b> : il vient en <b>diminution</b> des achats, donc il fonctionne comme un compte <b>créditeur</b>. C'est l'exception qui confirme la règle. Il ne s'utilise qu'en cas de <b>note de crédit</b>."},
+
+  {t:'fill', pts:12,
+   q:"Complète la synthèse des quatre catégories.",
+   text:"Les comptes d'actif et de {0} sont débités des {1} et crédités des diminutions : ils sont dits {2}. Les comptes de passif et de {3} sont crédités des augmentations : ils sont dits {4}.",
+   bank:['charge','produit','augmentations','diminutions','débiteurs','créditeurs','soldes'],
+   a:['charge','augmentations','débiteurs','produit','créditeurs'],
+   hint:"Repère d'abord les deux paires qui vont ensemble : quelle catégorie du compte de résultats se comporte comme l'actif, et laquelle se comporte comme le passif ?",
+   ex:"Actif <b>et charge</b> forment la famille des <b>débiteurs</b> (à gauche de leur document). Passif <b>et produit</b> forment la famille des <b>créditeurs</b> (à droite). Une fois cette parenté comprise, tu n'as plus que deux schémas à retenir au lieu de quatre."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 6 */
+{
+  id:6, icon:'🧾', title:'Les écritures avec TVA',
+  sub:'Achats, investissements, ventes — et les bonnes grilles',
+  goal:'Passer les trois écritures de base, TVA comprise, et identifier la grille TVA correspondante.',
+  theory:`
+<h3>🛒 Achat, frais généraux ou investissement ?</h3>
+<p>Avant de choisir un compte, il faut trancher la nature de la dépense. Trois familles, trois classes :</p>
+<div class="tgrid">
+<div class="tacc"><div class="tacc-h">60 — MARCHANDISES</div><div style="padding:9px 11px;font-size:.82rem">Biens que l'entreprise destine à <b>vendre</b>.<br>MP : qu'elle destine à <b>transformer</b> pour les vendre ensuite.</div></div>
+<div class="tacc"><div class="tacc-h">61 — SBD (+ 65)</div><div style="padding:9px 11px;font-size:.82rem">Biens et services <b>autres</b> que les marchandises, consommés en <b>moins d'un an</b>.<br>Entretien voiture, électricité, comptable…</div></div>
+<div class="tacc"><div class="tacc-h">CLASSE 2 — INVESTISSEMENT</div><div style="padding:9px 11px;font-size:.82rem">Biens corporels ou incorporels utilisés <b>plus d'un an</b>.<br>Ordinateur, machines, voitures, bâtiments.</div></div>
+</div>
+
+<h3>🧾 Les trois comptes de l'achat</h3>
+<table>
+<tr><th>Compte</th><th>Intitulé</th><th>Nature</th></tr>
+<tr><td class="num-c">6040</td><td>Achats de marchandises</td><td>compte de <b>charge</b> → débiteur</td></tr>
+<tr><td class="num-c">4110</td><td>TVA déductible (à récupérer)</td><td>compte d'<b>actif</b> — créance sur l'État</td></tr>
+<tr><td class="num-c">4400</td><td>Fournisseurs</td><td>compte de <b>passif</b> — dette</td></tr>
+</table>
+<div class="callout c-key"><div class="ct">🔑 Règle d'évaluation</div>
+LE PRIX D'ACQUISITION COMPREND, OUTRE LE PRIX D'ACHAT, LES FRAIS ACCESSOIRES TELS QUE LES IMPÔTS (TVA) <b>NON RÉCUPÉRABLES</b>, LES FRAIS DE TRANSPORT, D'ASSURANCE, ETC.</div>
+<p>Le montant dû est <b>toujours crédité au compte fournisseur</b> : au moment d'enregistrer la facture, on ne sait pas encore si elle sera payée. L'achat est enregistré au <b>journal des achats</b>, le paiement le sera au <b>journal financier</b>.</p>
+
+<h3>💰 Les trois comptes de la vente</h3>
+<table>
+<tr><th>Compte</th><th>Intitulé</th><th>Nature</th></tr>
+<tr><td class="num-c">7000</td><td>Chiffre d'affaires</td><td>compte de <b>produit</b> → créditeur</td></tr>
+<tr><td class="num-c">4510</td><td>TVA due (à payer)</td><td>compte de <b>passif</b> — dette</td></tr>
+<tr><td class="num-c">4000</td><td>Clients</td><td>compte d'<b>actif</b> — créance</td></tr>
+</table>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple 1 — achat de marchandises 1.000 € · TVA 21 %</div>
+<div class="tgrid" style="margin-top:8px">
+<div class="tacc"><div class="tacc-h">6040 ACHATS DE MARCHANDISES</div><div class="tacc-b">
+<div><div class="tacc-s d">D +</div><div class="tacc-l">(1) 1.000 <span style="color:var(--text3)">(81)</span></div></div><div><div class="tacc-s c">C −</div></div></div></div>
+<div class="tacc"><div class="tacc-h">4110 TVA À RÉCUPÉRER</div><div class="tacc-b">
+<div><div class="tacc-s d">D +</div><div class="tacc-l">(1) 210 <span style="color:var(--text3)">(59)</span></div></div><div><div class="tacc-s c">C −</div></div></div></div>
+<div class="tacc"><div class="tacc-h">4400 FOURNISSEURS</div><div class="tacc-b">
+<div><div class="tacc-s d">D −</div></div><div><div class="tacc-s c">C +</div><div class="tacc-l">1.210 (1)</div></div></div></div>
+</div>
+<p style="margin-top:6px;font-size:.83rem">6 = charge = débiteur · 41 = actif = débiteur · 44 = passif = créditeur. L'entreprise a payé cette TVA à son fournisseur : elle la <b>récupérera</b> auprès de l'État.</p></div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple 2 — achat d'une machine 5.000 € · TVA 21 %</div>
+<div style="font-family:'Space Mono',monospace;font-size:.8rem;line-height:1.9">
+2300 IMO&nbsp;&nbsp;D <span class="num-c">5.000</span> <span style="color:var(--text3)">(grille 83)</span><br>
+4110 TVA à récupérer&nbsp;&nbsp;D <span class="num-c">1.050</span> <span style="color:var(--text3)">(grille 59)</span><br>
+&nbsp;&nbsp;&nbsp;à 4400 Fournisseurs&nbsp;&nbsp;C <span class="num-c">6.050</span></div>
+<p style="font-size:.83rem;margin-top:6px">Une machine sert plus d'un an → ce n'est pas une charge mais un <b>investissement</b> (classe 2), et la grille TVA change : <b>83</b> au lieu de 81.</p></div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple 3 — vente de marchandises 2.000 € · TVA 6 %</div>
+<div style="font-family:'Space Mono',monospace;font-size:.8rem;line-height:1.9">
+4000 Clients&nbsp;&nbsp;D <span class="num-c">2.120</span><br>
+&nbsp;&nbsp;&nbsp;à 7000 Ventes&nbsp;&nbsp;C <span class="num-c">2.000</span> <span style="color:var(--text3)">(grille 01)</span><br>
+&nbsp;&nbsp;&nbsp;à 4510 TVA à payer&nbsp;&nbsp;C <span class="num-c">120</span> <span style="color:var(--text3)">(grille 54)</span></div></div>
+
+<h3>🔢 Les grilles de la déclaration TVA</h3>
+<table>
+<tr><th>Opération</th><th>Grille</th></tr>
+<tr><td>Achats de marchandises et matières premières</td><td class="num-c">81</td></tr>
+<tr><td>Services et biens divers (SBD)</td><td class="num-c">82</td></tr>
+<tr><td>Achats de biens d'investissement</td><td class="num-c">83</td></tr>
+<tr><td>Achat en <b>cocontractant</b> (entre 2 assujettis avec n° TVA)</td><td class="num-c">87</td></tr>
+<tr><td>AIC (acquisition intracommunautaire) ou importation</td><td class="num-c">86 ou 87</td></tr>
+<tr><td>Ventes selon le taux (6 % · 12 % · 21 %)</td><td class="num-c">01 · 02 · 03</td></tr>
+<tr><td>Vente en <b>cocontractant</b></td><td class="num-c">45</td></tr>
+<tr><td>LIC (livraison intracommunautaire) ou exportation</td><td class="num-c">46 ou 47</td></tr>
+<tr><td>TVA due sur les ventes</td><td class="num-c">54</td></tr>
+<tr><td>TVA déductible</td><td class="num-c">59</td></tr>
+</table>
+<p><b>Ventes de biens</b> : compte 700. <b>Prestations de services</b> : compte 707. La vente d'un bien d'investissement suit encore d'autres règles.</p>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple 4 — une vraie facture</div>
+500 cahiers 100 pages quadrillage 7 mm à 1,21 € l'unité, TVA 21 %.
+<table style="margin-top:6px"><tr><th>Libellé</th><th>Qté</th><th>P.U.</th><th>Total</th></tr>
+<tr><td>Cahiers</td><td class="num-c">500</td><td class="num-c">1,21</td><td class="num-c">605,00</td></tr>
+<tr><td colspan="3">TVA 21 %</td><td class="num-c">127,05</td></tr>
+<tr><td colspan="3"><b>TOTAL</b></td><td class="num-c"><b>732,05</b></td></tr></table>
+<p>Écriture : 6040 D 605,00 · 4110 D 127,05 · 4400 C 732,05. La TVA est <b>intégralement déductible</b>.</p>
+<p>Ces cahiers sont ensuite revendus 1,86 € HTVA l'unité : 4000 D 1.125,30 · 7000 C 930,00 · 4510 C 195,30.</p></div>
+
+<div class="callout c-warn"><div class="ct">⚡ Mise à jour 2026 — la facture électronique</div>
+Depuis le <b>1<sup>er</sup> janvier 2026</b>, la facture entre entreprises belges assujetties (<b>B2B</b>) doit prendre la forme d'une <b>facture électronique structurée</b> conforme à la norme européenne EN 16931, transmise via le réseau <b>Peppol</b> (format Peppol BIS). Un simple PDF envoyé par courriel ou une facture papier ne suffisent plus. Les factures adressées à des particuliers (<b>B2C</b>) ne sont pas visées. Base légale : loi du 6 février 2024 et AR du 8 juillet 2025.</div>
+
+<div class="callout c-note"><div class="ct">ℹ️ Les comptes particuliers fournisseurs</div>
+Le compte 4400 est un compte <b>général</b>. Pour chaque fournisseur, on tient en outre un <b>compte particulier</b> : 4400.01 SRL Massart, 4400.02 Entreprise Durant &amp; Fils… Le solde créditeur de chacun indique l'encours des dettes vis-à-vis de ce fournisseur, ce qui est utile pour négocier délais de paiement et ristournes.</div>
+`,
+  questions:[
+  {t:'classify', pts:14,
+   q:"Un magasin de vélos enregistre ces factures. Marchandise, frais généraux ou investissement ?",
+   buckets:['60 — MARCHANDISES','61 — SBD','CLASSE 2 — INVESTISSEMENT'],
+   items:[
+     {x:'Vélos achetés pour être revendus',b:0},{x:'Cadres en aluminium à assembler',b:0},
+     {x:"Facture d'électricité de l'atelier",b:1},{x:'Honoraires du comptable',b:1},
+     {x:'Entretien de la camionnette',b:1},{x:'Assurance du magasin',b:1},
+     {x:"Camionnette de livraison",b:2},{x:'Ordinateur de caisse',b:2},{x:"Vitrine réfrigérée de l'atelier",b:2}
+   ],
+   hint:"Deux questions à poser dans l'ordre : (1) ce bien est-il destiné à être revendu (ou transformé puis revendu) ? (2) sinon, sera-t-il encore utilisé dans plus d'un an ? Attention au piège : la camionnette apparaît deux fois, mais pas pour la même raison.",
+   ex:"Destiné à la revente → <b>60</b> (les vélos, les cadres à assembler = matières premières). Consommé en moins d'un an → <b>61</b> (électricité, honoraires, entretien, assurance). Utilisé plus d'un an → <b>classe 2</b> (camionnette, ordinateur, vitrine). Noter la nuance : l'<b>achat</b> de la camionnette est un investissement, son <b>entretien</b> est un SBD."},
+
+  {t:'table', pts:18,
+   q:"Achat de marchandises pour 1.000 € — TVA 21 %. Passe l'écriture complète et indique la grille TVA.",
+   sub:"Convention comptable : inscris d'abord les comptes <b style='color:var(--debit)'>débités</b>, puis les comptes <b style='color:var(--credit)'>crédités</b>. L'ordre des lignes n'est toutefois pas pénalisé.",
+   anyOrder:true,
+   cols:['Compte','Débit','Crédit','Grille'],
+   selOpts:['—','6040 Achats de marchandises','2300 IMO','4110 TVA à récupérer','4400 Fournisseurs','4510 TVA à payer','7000 Chiffre d\'affaires','4000 Clients'],
+   selOpts2:['—','01','54','59','81','82','83'],
+   rows:[
+     [{k:'sel',a:'6040 Achats de marchandises'},{k:'num',a:1000},{k:'num',a:null},{k:'sel2',a:'81'}],
+     [{k:'sel',a:'4110 TVA à récupérer'},{k:'num',a:210},{k:'num',a:null},{k:'sel2',a:'59'}],
+     [{k:'sel',a:'4400 Fournisseurs'},{k:'num',a:null},{k:'num',a:1210},{k:'sel2',a:'—'}]
+   ],
+   hint:"Trois comptes, trois natures différentes : une charge, une créance sur l'État, une dette. Calcule la TVA sur le montant HTVA, puis souviens-toi que le fournisseur réclame le total TVAC. Et pour la grille : ce sont des marchandises, pas un investissement.",
+   ex:"6040 D 1.000 (grille <b>81</b> : le montant HTVA des achats de marchandises) · 4110 D 210 (grille <b>59</b> : la TVA déductible) · 4400 C 1.210 (le total TVAC dû au fournisseur, qui n'apparaît dans aucune grille). Σ D = Σ C = 1.210."},
+
+  {t:'table', pts:18,
+   q:"Achat d'une machine pour 5.000 € — TVA 21 %. Attention au compte et à la grille.",
+   sub:"Convention comptable : inscris d'abord les comptes <b style='color:var(--debit)'>débités</b>, puis les comptes <b style='color:var(--credit)'>crédités</b>. L'ordre des lignes n'est toutefois pas pénalisé.",
+   anyOrder:true,
+   cols:['Compte','Débit','Crédit','Grille'],
+   selOpts:['—','6040 Achats de marchandises','2300 IMO','61 Services et biens divers','4110 TVA à récupérer','4400 Fournisseurs','4000 Clients'],
+   selOpts2:['—','01','54','59','81','82','83'],
+   rows:[
+     [{k:'sel',a:'2300 IMO'},{k:'num',a:5000},{k:'num',a:null},{k:'sel2',a:'83'}],
+     [{k:'sel',a:'4110 TVA à récupérer'},{k:'num',a:1050},{k:'num',a:null},{k:'sel2',a:'59'}],
+     [{k:'sel',a:'4400 Fournisseurs'},{k:'num',a:null},{k:'num',a:6050},{k:'sel2',a:'—'}]
+   ],
+   hint:"Une machine sera encore là dans cinq ans : est-ce vraiment une charge de l'année ? Le mécanisme de la TVA, lui, ne change pas — mais la grille des achats, si.",
+   ex:"Une machine est un <b>investissement</b> (durée &gt; 1 an) : elle entre à l'actif en <code>2300 IMO</code> et non en charge. La grille devient <b>83</b> (achats de biens d'investissement) au lieu de 81. La TVA reste intégralement déductible : 5.000 × 21 % = 1.050, grille 59. Le fournisseur est crédité de 6.050."},
+
+  {t:'table', pts:18,
+   q:"Vente de marchandises pour 2.000 € — TVA 6 %.",
+   sub:"Convention comptable : inscris d'abord les comptes <b style='color:var(--debit)'>débités</b>, puis les comptes <b style='color:var(--credit)'>crédités</b>. L'ordre des lignes n'est toutefois pas pénalisé.",
+   anyOrder:true,
+   cols:['Compte','Débit','Crédit','Grille'],
+   selOpts:['—','4000 Clients','7000 Chiffre d\'affaires','4510 TVA à payer','4110 TVA à récupérer','4400 Fournisseurs','6040 Achats de marchandises'],
+   selOpts2:['—','01','02','03','54','59','81'],
+   rows:[
+     [{k:'sel',a:'4000 Clients'},{k:'num',a:2120},{k:'num',a:null},{k:'sel2',a:'—'}],
+     [{k:'sel',a:'7000 Chiffre d\'affaires'},{k:'num',a:null},{k:'num',a:2000},{k:'sel2',a:'01'}],
+     [{k:'sel',a:'4510 TVA à payer'},{k:'num',a:null},{k:'num',a:120},{k:'sel2',a:'54'}]
+   ],
+   hint:"C'est le miroir exact de l'achat : ce qui était charge devient produit, la créance sur l'État devient une dette envers lui, et le fournisseur devient le client. Pour la grille des ventes, le taux appliqué détermine le numéro : 6 %, 12 % ou 21 % ?",
+   ex:"Le client doit le total TVAC → <code>4000</code> D 2.120 (compte d'actif qui augmente). Le CA HTVA est un produit → <code>7000</code> C 2.000, grille <b>01</b> (ventes au taux de 6 %). La TVA perçue pour l'État est une dette → <code>4510</code> C 120, grille <b>54</b>. Rappel : 01 = 6 %, 02 = 12 %, 03 = 21 %."},
+
+  {t:'table', pts:16,
+   q:"Reconstitue la facture : 500 cahiers à 1,21 € HTVA l'unité, TVA 21 %.",
+   sub:"Utilise la virgule comme séparateur décimal. Tu peux taper ton calcul directement (ex. : 500*1,21).",
+   cols:['Ligne de la facture','Montant (€)'],
+   rows:[
+     [{k:'txt',v:'Total HTVA'},{k:'num',a:605}],
+     [{k:'txt',v:'TVA 21 %'},{k:'num',a:127.05}],
+     [{k:'txt',v:'TOTAL À PAYER (TVAC)'},{k:'num',a:732.05}]
+   ],
+   hint:"La TVA se calcule toujours sur le montant hors TVA, jamais sur le total. Et le total à payer n'est pas une nouvelle multiplication : c'est une simple addition des deux lignes du dessus.",
+   ex:"HTVA = 500 × 1,21 = <b>605,00 €</b>. TVA = 605,00 × 21 % = <b>127,05 €</b>. Total TVAC = 605,00 + 127,05 = <b>732,05 €</b>. Le comptable enregistre 605,00 en 6040 (charge, HTVA), 127,05 en 4110 (créance sur l'État) et 732,05 en 4400 (la dette réelle envers le fournisseur)."},
+
+  {t:'qcm', pts:8,
+   q:"Une entreprise de construction facture des travaux à une autre société belge assujettie à la TVA. Le régime du cocontractant s'applique. Quelle grille pour cette VENTE ?",
+   opts:['Grille 03 — ventes au taux de 21 %','Grille 45 — opérations en cocontractant','Grille 46 — livraison intracommunautaire','Grille 87 — achats en cocontractant'],
+   a:1,
+   hint:"En cocontractant, c'est le <b>client</b> qui déclare et paie la TVA à l'État, pas le vendeur. La grille utilisée par le vendeur ne peut donc pas être une grille de vente ordinaire avec un taux. Et attention au sens : ici on est du côté du vendeur.",
+   ex:"Du côté du <b>vendeur</b>, le cocontractant se déclare en grille <b>45</b> (et aucune TVA n'est facturée). Du côté de l'<b>acheteur</b>, il se déclare en grille <b>87</b>. Ne confonds pas avec la LIC (46) ou l'exportation (47), qui concernent des clients hors Belgique."},
+
+  {t:'vf', pts:6,
+   q:"« Depuis le 1er janvier 2026, une facture PDF envoyée par courriel suffit entre deux entreprises belges assujetties à la TVA. »",
+   a:1,
+   hint:"Le mot important de la nouvelle obligation est « structurée ». Un PDF est-il un fichier que le logiciel comptable du destinataire peut lire et traiter automatiquement, sans intervention humaine ?",
+   ex:"<b>Faux.</b> Depuis le 1<sup>er</sup> janvier 2026, la facture <b>B2B</b> entre entreprises belges assujetties doit être une <b>facture électronique structurée</b> (norme EN 16931) transmise via le réseau <b>Peppol</b>. Le PDF et le papier ne suffisent plus dans ce cadre. Les factures aux particuliers (<b>B2C</b>) ne sont pas concernées."},
+
+  {t:'qcm', pts:8,
+   q:"Pourquoi le montant total TVAC est-il crédité au compte 4400 Fournisseurs dès la réception de la facture, même si l'entreprise a déjà payé le jour même ?",
+   opts:[
+     "Parce que la TVA doit toujours transiter par le compte fournisseur.",
+     "Parce qu'au moment d'enregistrer la facture, on ne sait pas si elle a été payée : l'achat est enregistré au journal des achats, le paiement au journal financier.",
+     "Parce que le compte fournisseur doit être soldé en fin d'exercice.",
+     "Parce que la loi interdit de payer une facture le jour de sa réception."],
+   a:1,
+   hint:"Pense à l'organisation du travail comptable : qui enregistre les factures, et à partir de quelle pièce enregistre-t-on un paiement ? Est-ce la même pièce justificative, le même jour, le même journal ?",
+   ex:"Chaque opération suit sa pièce justificative et son journal : la <b>facture</b> va au <b>journal des achats</b>, l'<b>extrait de compte</b> au <b>journal financier</b>. Cette séparation garantit la traçabilité et permet de suivre l'encours de dettes par fournisseur via les comptes particuliers (4400.01, 4400.02…)."}
+  ]
+},
+
+/* ---------------------------------------------------------- NIVEAU 7 */
+{
+  id:7, icon:'🏁', title:'TVA & clôture',
+  sub:'Déclaration périodique, balance de vérification, bilan final',
+  goal:'Établir une déclaration TVA trimestrielle et boucler un exercice comptable.',
+  theory:`
+<h3>🧾 La déclaration TVA périodique</h3>
+<p>La TVA est un <b>impôt sur la consommation</b>. L'entreprise assujettie la perçoit <b>pour l'État</b> sur ses ventes (TVA due) et récupère celle qu'elle a payée à ses fournisseurs (TVA déductible). Chaque trimestre (ou chaque mois), elle établit une <b>déclaration périodique</b> — déposée par voie électronique via l'application <b>Intervat</b> du <b>SPF Finances</b> — et verse la différence à l'État, ou en obtient le remboursement.</p>
+<div class="callout c-key"><div class="ct">🔑 Neutralité</div>
+Pour l'entreprise assujettie, la TVA est <b>neutre</b> : elle ne l'enrichit ni ne l'appauvrit. Elle n'est qu'un intermédiaire entre le consommateur final et l'État. C'est pourquoi elle n'apparaît jamais en classe 6 ou 7, mais toujours en classe 4.</div>
+
+<table>
+<tr><th>Cadre</th><th>Contenu</th><th>Grilles principales</th></tr>
+<tr><td><b>I</b></td><td>Renseignements généraux (identification de l'assujetti, période)</td><td>—</td></tr>
+<tr><td><b>II</b></td><td>Opérations à la <b>sortie</b> (ventes)</td><td class="num-c">00 · 01 · 02 · 03 · 44 à 49</td></tr>
+<tr><td><b>III</b></td><td>Opérations à l'<b>entrée</b> (achats)</td><td class="num-c">81 · 82 · 83 · 84 à 88</td></tr>
+<tr><td><b>IV</b></td><td>Taxes <b>dues</b></td><td class="num-c">54 · 55 · 56 · 57 · 61 · 63</td></tr>
+<tr><td><b>V</b></td><td>Taxes <b>déductibles</b></td><td class="num-c">59 · 62 · 64</td></tr>
+<tr><td><b>VI</b></td><td><b>Solde</b></td><td class="num-c">71 = à payer · 72 = à récupérer</td></tr>
+</table>
+<div class="callout c-key"><div class="ct">🔑 Le réflexe du solde</div>
+SI Σ TVA DÉDUCTIBLE &gt; Σ TVA DUE ► <b>GRILLE 72</b> (l'État te doit)<br>SINON ► <b>GRILLE 71</b> (tu dois payer)</div>
+
+<div class="callout c-ex"><div class="ct">🔎 Exemple — déclaration du 1er trimestre (janvier à mars)</div>
+Sur la base des trois écritures du niveau 6 : achat de marchandises 1.000 € (TVA 210), achat d'une machine 5.000 € (TVA 1.050), vente 2.000 € au taux de 6 % (TVA 120).
+<table style="margin-top:6px">
+<tr><th>Cadre</th><th>Grille</th><th>Libellé</th><th>Montant</th></tr>
+<tr><td>II</td><td class="num-c">01</td><td>Ventes au taux de 6 %</td><td class="num-c">2.000,00</td></tr>
+<tr><td>III</td><td class="num-c">81</td><td>Achats de marchandises</td><td class="num-c">1.000,00</td></tr>
+<tr><td>III</td><td class="num-c">83</td><td>Achats de biens d'investissement</td><td class="num-c">5.000,00</td></tr>
+<tr><td>IV</td><td class="num-c">54</td><td>TVA due sur les ventes</td><td class="num-c">120,00</td></tr>
+<tr><td>V</td><td class="num-c">59</td><td>TVA déductible (210 + 1.050)</td><td class="num-c">1.260,00</td></tr>
+<tr><td>VI</td><td class="num-c">72</td><td><b>Somme due par l'État</b> (1.260 − 120)</td><td class="num-c"><b>1.140,00</b></td></tr>
+</table>
+<p style="font-size:.83rem">Les grilles 81 et 83 reçoivent les montants <b>HTVA</b> ; les grilles 54 et 59 reçoivent les <b>montants de TVA</b>. Ne mélange jamais les deux.</p></div>
+
+<h3>🔒 Clôturer l'exercice</h3>
+<h4>1. Calculer les soldes</h4>
+<ul>
+<li><b>Comptes d'actif</b> : différence entre ΣD+ et ΣC− → <b>solde débiteur (SD)</b>.</li>
+<li><b>Comptes de passif</b> : différence entre ΣC+ et ΣD− → <b>solde créditeur (SC)</b>.</li>
+</ul>
+
+<h4>2. Établir la balance de vérification (balance par soldes)</h4>
+<p>Reprenons HAIR STYLE : apport 20.000 € (0), facture matériel 8.000 € + mobilier 3.500 € (1), paiement du fournisseur 11.500 € (2).</p>
+<table>
+<tr><th>Intitulés</th><th>SD</th><th>SC</th></tr>
+<tr><td>1000 Capital</td><td></td><td class="num-c">20.000</td></tr>
+<tr><td>2300 Matériel</td><td class="num-c">8.000</td><td></td></tr>
+<tr><td>2400 Mobilier</td><td class="num-c">3.500</td><td></td></tr>
+<tr><td>5500 Banque CC</td><td class="num-c">8.500</td><td></td></tr>
+<tr><td><b>TOTAUX</b></td><td class="num-c"><b>20.000</b></td><td class="num-c"><b>20.000</b></td></tr>
+</table>
+<div class="callout c-warn"><div class="ct">⚠️ Obligatoirement</div>
+Σ SD = Σ SC ► SINON, RECHERCHER L'ERREUR. Le compte 4400 n'apparaît plus : il est <b>soldé</b> (11.500 au débit contre 11.500 au crédit).</div>
+
+<h4>3. Dresser le bilan final</h4>
+<p>À partir de la balance, on consulte dans le PCMN la position de chaque compte :</p>
+<table>
+<tr><th>Compte</th><th>Solde</th><th>Position au bilan</th></tr>
+<tr><td>1000 Capital</td><td>SC</td><td>P.I.</td></tr>
+<tr><td>2300 Matériel</td><td>SD</td><td>A.III.B.</td></tr>
+<tr><td>2400 Mobilier</td><td>SD</td><td>A.III.C.</td></tr>
+<tr><td>5500 Banque</td><td>SD</td><td>A.IX.</td></tr>
+</table>
+<div class="tw">
+  <div><div class="tw-h">ACTIF</div><div style="font-size:.83rem;line-height:1.85">
+  III. Immobilisations corporelles <span class="num-c">11.500</span><br>
+  <span style="padding-left:12px">B. IMO <span class="num-c">8.000</span></span><br>
+  <span style="padding-left:12px">C. mobilier <span class="num-c">3.500</span></span><br>
+  IX. Valeurs disponibles <span class="num-c">8.500</span><br><b>TOTAL <span class="num-c">20.000</span></b></div></div>
+  <div><div class="tw-h">PASSIF</div><div style="font-size:.83rem;line-height:1.85">
+  I. Apport (capital) <span class="num-c">20.000</span><br><br><br><br><b>TOTAL <span class="num-c">20.000</span></b></div></div>
+</div>
+<p style="font-size:.83rem">Remarque : cet exemple ne comportait que des opérations <b>patrimoniales</b> — ni charges ni produits — donc pas de compte de résultats.</p>
+
+<h3>🔍 Interpréter les comptes de bilan</h3>
+<p>Les comptes de bilan sont dits « <b>de stock</b> » : leur solde donne à tout moment la valeur du patrimoine. Attention toutefois aux opérations de fin d'exercice. Si tu consultes les comptes au <b>15 juin</b> :</p>
+<ul>
+<li>le solde du compte <b>CLIENTS</b> donne bien la situation à cette date : les factures et paiements sont enregistrés au jour le jour ;</li>
+<li>le solde du compte <b>CAISSE</b> te dit combien d'argent il y a ce 15 juin ; <b>MAIS</b></li>
+<li>en l'absence d'inventaire permanent, le solde du compte <b>STOCK</b> est celui du <b>dernier inventaire</b> (fin décembre !) : il ne dit rien du stock réel au 15 juin ;</li>
+<li>de même, la valeur du <b>MOBILIER</b> est celle de la fin de l'année précédente.</li>
+</ul>
+`,
+  questions:[
+  {t:'table', pts:20,
+   q:"Établis la déclaration TVA du 1er trimestre à partir des trois écritures du niveau 6 : achat de marchandises 1.000 € (TVA 21 %), achat d'une machine 5.000 € (TVA 21 %), vente de marchandises 2.000 € (TVA 6 %).",
+   sub:"Rappel : les grilles 01, 81 et 83 reçoivent des montants HTVA ; les grilles 54 et 59 reçoivent des montants de TVA.",
+   cols:['Cadre','Grille','Libellé','Montant (€)'],
+   rows:[
+     [{k:'txt',v:'II'},{k:'txt',v:'01'},{k:'txt',v:'Ventes au taux de 6 %'},{k:'num',a:2000}],
+     [{k:'txt',v:'III'},{k:'txt',v:'81'},{k:'txt',v:'Achats de marchandises'},{k:'num',a:1000}],
+     [{k:'txt',v:'III'},{k:'txt',v:'83'},{k:'txt',v:"Achats de biens d'investissement"},{k:'num',a:5000}],
+     [{k:'txt',v:'IV'},{k:'txt',v:'54'},{k:'txt',v:'TVA due sur les ventes'},{k:'num',a:120}],
+     [{k:'txt',v:'V'},{k:'txt',v:'59'},{k:'txt',v:'TVA déductible'},{k:'num',a:1260}]
+   ],
+   hint:"Attention à ne pas confondre les deux types de montants : une grille d'opération (01, 81, 83) reprend la base HTVA, une grille de taxe (54, 59) reprend la TVA elle-même. Et la TVA déductible du trimestre additionne <b>toutes</b> les TVA payées aux fournisseurs, marchandises et investissement compris.",
+   ex:"Grille 01 = 2.000 (base HTVA de la vente à 6 %). Grille 81 = 1.000 et grille 83 = 5.000 (bases HTVA des achats, séparées selon leur nature). Grille 54 = 120 (TVA due : 2.000 × 6 %). Grille 59 = 210 + 1.050 = <b>1.260</b> (toute la TVA payée aux fournisseurs)."},
+
+  {t:'qcm', pts:10,
+   q:"Sur la base de cette même déclaration (TVA due 120 €, TVA déductible 1.260 €), quelle grille du cadre VI faut-il compléter ?",
+   opts:[
+     "La grille 71 : l'entreprise doit payer 1.140 € à l'État.",
+     "La grille 72 : l'État doit 1.140 € à l'entreprise.",
+     "La grille 71 : l'entreprise doit payer 1.380 € à l'État.",
+     "Aucune : quand la TVA déductible dépasse la TVA due, il n'y a rien à déclarer."],
+   a:1,
+   hint:"Compare les deux totaux avant de choisir la grille. Cette entreprise a payé beaucoup de TVA à ses fournisseurs (dont 1.050 € sur une machine) mais n'en a perçu que très peu sur ses ventes. Qui est créancier de qui ?",
+   ex:"TVA déductible (1.260) &gt; TVA due (120) → <b>grille 72</b>, somme due <b>par l'État</b> : 1.260 − 120 = <b>1.140 €</b>. C'est une situation fréquente le trimestre d'un gros investissement. Dans le cas inverse, on remplirait la grille 71 (à payer)."},
+
+  {t:'num', pts:10, unit:'€',
+   q:"Trimestre suivant, aucun investissement : la TVA due sur les ventes s'élève à 3.000 € et la TVA déductible à 1.200 €. Quel est le solde à porter en grille 71 ?",
+   a:1800,
+   hint:"Le calcul est toujours le même : la différence entre ce que tu as perçu pour l'État et ce que tu as payé à tes fournisseurs. Ici, dans quel sens penche la balance ?",
+   ex:"3.000 − 1.200 = <b>1.800 €</b> à payer, en <b>grille 71</b>. L'entreprise a perçu 3.000 € de TVA pour le compte de l'État mais en a déjà versé 1.200 € à ses fournisseurs : elle ne reverse que le solde. La TVA reste bien <b>neutre</b> pour elle."},
+
+  {t:'table', pts:18,
+   q:"HAIR STYLE — dresse la balance de vérification par soldes. Apport 20.000 €, facture matériel 8.000 € et mobilier 3.500 €, puis paiement du fournisseur 11.500 €.",
+   sub:"Un seul montant par ligne, dans la bonne colonne. Un compte soldé ne figure pas dans la balance.",
+   cols:['Compte','SD','SC'],
+   rows:[
+     [{k:'txt',v:'1000 Capital'},{k:'num',a:null},{k:'num',a:20000}],
+     [{k:'txt',v:'2300 Matériel'},{k:'num',a:8000},{k:'num',a:null}],
+     [{k:'txt',v:'2400 Mobilier'},{k:'num',a:3500},{k:'num',a:null}],
+     [{k:'txt',v:'5500 Banque'},{k:'num',a:8500},{k:'num',a:null}],
+     [{k:'txt',v:'TOTAUX'},{k:'num',a:20000},{k:'num',a:20000}]
+   ],
+   hint:"Pour chaque compte, demande-toi d'abord s'il est d'actif ou de passif : cela te donne immédiatement la colonne. Pour la banque, n'oublie pas qu'elle a d'abord reçu l'apport puis payé le fournisseur.",
+   ex:"Capital (passif) → SC 20.000. Matériel et mobilier (actif) → SD 8.000 et 3.500. Banque : 20.000 reçus − 11.500 payés = SD <b>8.500</b>. Totaux : 8.000 + 3.500 + 8.500 = 20.000 = SC. Le compte 4400 est <b>soldé</b> (11.500 D contre 11.500 C) : il n'apparaît pas dans la balance."},
+
+  {t:'table', pts:16,
+   q:"Déduis maintenant le bilan final de HAIR STYLE à partir de cette balance.",
+   sub:"<b>Rappel de la balance :</b> 1000 Capital <span class='mono'>SC 20.000</span> · 2300 Matériel <span class='mono'>SD 8.000</span> · 2400 Mobilier <span class='mono'>SD 3.500</span> · 5500 Banque <span class='mono'>SD 8.500</span>. Aucun nouveau calcul : chaque solde rejoint sa position au bilan.",
+   cols:['Rubrique','Montant (€)'],
+   rows:[
+     [{k:'txt',v:'A.III.B — IMO (matériel)'},{k:'num',a:8000}],
+     [{k:'txt',v:'A.III.C — Mobilier'},{k:'num',a:3500}],
+     [{k:'txt',v:'A.IX — Valeurs disponibles'},{k:'num',a:8500}],
+     [{k:'txt',v:'TOTAL ACTIF'},{k:'num',a:20000}],
+     [{k:'txt',v:'P.I — Apport (capital)'},{k:'num',a:20000}]
+   ],
+   hint:"Aucun nouveau calcul n'est nécessaire : chaque solde de la balance se range à sa position PCMN. Vérifie simplement à la fin que l'égalité fondamentale du bilan est respectée.",
+   ex:"Chaque solde débiteur rejoint l'actif à sa position PCMN (2300 → A.III.B, 2400 → A.III.C, 5500 → A.IX) et chaque solde créditeur rejoint le passif (1000 → P.I). Total actif = 8.000 + 3.500 + 8.500 = <b>20.000</b> = total passif. Aucune charge ni produit ici : opérations purement <b>patrimoniales</b>, donc pas de compte de résultats."},
+
+  {t:'qcm', pts:10,
+   q:"Le 15 juin, tu consultes les comptes de l'entreprise. Quel solde ne reflète PAS la réalité de ce jour-là ?",
+   opts:[
+     'Le compte 4000 Clients : les factures et paiements sont enregistrés au jour le jour.',
+     'Le compte 5700 Caisse : chaque mouvement d\'espèces est enregistré.',
+     'Le compte 3400 Stock marchandises : sans inventaire permanent, il date du dernier inventaire.',
+     'Le compte 5500 Banque : chaque extrait est enregistré.'],
+   a:2,
+   hint:"Trois de ces comptes bougent à chaque pièce justificative reçue. Un seul ne bouge qu'une fois par an, lors d'une opération bien particulière de fin d'exercice. Laquelle ?",
+   ex:"Sans <b>inventaire permanent</b>, le compte stock n'est mis à jour qu'une fois par an, lors de l'<b>inventaire</b> de fin d'exercice (vers fin décembre). Son solde au 15 juin est donc celui de décembre dernier. Même remarque pour la valeur du mobilier, figée depuis le dernier amortissement."},
+
+  {t:'match', pts:14,
+   q:"Associe chaque cadre de la déclaration TVA à son contenu.",
+   pairs:[
+     {l:'Cadre I',r:'Renseignements généraux'},
+     {l:'Cadre II',r:'Opérations à la sortie (ventes)'},
+     {l:"Cadre III",r:"Opérations à l'entrée (achats)"},
+     {l:'Cadre IV',r:'Taxes dues'},
+     {l:'Cadre V',r:'Taxes déductibles'},
+     {l:'Cadre VI',r:'Solde (71 ou 72)'}
+   ],
+   hint:"La déclaration suit une logique de lecture naturelle : on s'identifie, puis on décrit l'activité (ce qui sort, ce qui entre), puis on chiffre la taxe dans les deux sens, et enfin on conclut.",
+   ex:"I identification · II ventes (grilles 00 à 49) · III achats (grilles 81 à 88) · IV taxes dues (54 à 63) · V taxes déductibles (59, 62, 64) · VI solde (71 à payer, 72 à récupérer). Les cadres II et III portent sur les <b>bases HTVA</b>, les cadres IV et V sur la <b>TVA elle-même</b>."},
+
+  {t:'qcm', pts:8,
+   q:"Par quel canal la déclaration TVA périodique est-elle déposée ?",
+   opts:[
+     'Par courrier recommandé à la commune',
+     "Par voie électronique via l'application Intervat du SPF Finances",
+     'Via le réseau Peppol, comme les factures B2B',
+     "Auprès de la Commission des normes comptables (CNC)"],
+   a:1,
+   hint:"Deux des propositions citent des organismes bien réels, mais qui n'ont rien à voir avec le dépôt d'une déclaration fiscale. Et attention à ne pas confondre le canal des <b>factures</b> avec celui des <b>déclarations</b>.",
+   ex:"La déclaration se dépose électroniquement via <b>Intervat</b>, l'application du <b>SPF Finances</b> (Service public fédéral Finances). Le réseau <b>Peppol</b>, lui, sert à transmettre les <b>factures</b> électroniques structurées entre entreprises. La <b>CNC</b> publie les avis interprétant le droit comptable : elle ne reçoit aucune déclaration."}
+  ]
+}
+];
+
+/* ============================================================
+   PARTIE 3 — UTILITAIRES
+   ============================================================ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function $(id){return document.getElementById(id);}
+
+/* Format belge : 1.234,56 */
+function fmt(n){
+  if(n===null||n===undefined||isNaN(n)) return '';
+  const neg=n<0; n=Math.abs(n);
+  const s=(Math.round(n*100)/100).toFixed(2).split('.');
+  const ent=s[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return (neg?'-':'')+ent+','+s[1];
+}
+/* Accepte virgule ET point, espaces, séparateurs de milliers */
+function parseNum(v){
+  if(v===null||v===undefined) return NaN;
+  let s=String(v).trim().replace(/[\s\u00a0€]/g,'');
+  if(s==='') return NaN;
+  const hasC=s.indexOf(',')>-1, hasD=s.indexOf('.')>-1;
+  if(hasC&&hasD){ s=s.replace(/\./g,'').replace(',','.'); }
+  else if(hasC){ s=s.replace(',','.'); }
+  const n=parseFloat(s);
+  return isNaN(n)?NaN:n;
+}
+/* Mini-calculatrice : évalue une expression tapée par l'élève */
+function tryCalc(v){
+  if(!v) return null;
+  let s=String(v).replace(/[\s\u00a0€]/g,'').replace(/×/g,'*').replace(/÷/g,'/');
+  if(!/[+\-*/]/.test(s.slice(1))) return null;          // pas d'opérateur → pas un calcul
+  if(!/^[0-9+\-*/().,%]+$/.test(s)) return null;
+  s=s.replace(/(\d),(\d)/g,'$1.$2');
+  if(/%/.test(s)) s=s.replace(/%/g,'/100');
+  try{ const r=Function('"use strict";return ('+s+')')(); return (typeof r==='number'&&isFinite(r))?r:null; }
+  catch(e){ return null; }
+}
+function nearly(a,b,tol){ return Math.abs(a-b)<=(tol||0.02)+1e-9; }
+function fmtTime(sec){ const m=Math.floor(sec/60),s=sec%60; return m>0? m+'m'+String(s).padStart(2,'0')+'s' : s+'s'; }
+
+/* ============================================================
+   PARTIE 4 — ÉTAT DES QUESTIONS (pré-mélange global)
+   ============================================================ */
+function initQuestionState(){
+  QSTATE={};
+  LEVELS.forEach((lv,li)=>{
+    lv.questions.forEach((q,qi)=>{
+      QSTATE[li+'_'+qi]=buildQState(q);
+    });
+  });
+}
+function buildQState(q){
+  const st={attempts:0,status:null,ans:null,view:{}};
+  if(q.t==='qcm'||q.t==='multi'){ st.view.order=shuffle(q.opts.map((_,i)=>i)); st.ans=(q.t==='multi')?[]:null; }
+  if(q.t==='vf'){ st.ans=null; }
+  if(q.t==='classify'){ st.view.items=shuffle(q.items.map((_,i)=>i)); st.ans=q.items.map(()=>null); }
+  if(q.t==='match'){ st.view.left=shuffle(q.pairs.map((_,i)=>i)); st.view.right=shuffle(q.pairs.map(p=>p.r)); st.ans=q.pairs.map(()=>''); }
+  if(q.t==='order'){ st.view.pool=shuffle(q.items.map((_,i)=>i)); st.ans=[]; }
+  if(q.t==='fill'){ st.view.bank=shuffle(q.bank.slice()); st.ans=q.a.map(()=>''); }
+  if(q.t==='table'){ st.ans=q.rows.map(r=>r.map(c=>'')); }
+  if(q.t==='num'){ st.ans=''; }
+  return st;
+}
+function qs(){ return QSTATE[(APP.current-1)+'_'+APP.qIndex]; }
+function qdef(){ return LEVELS[APP.current-1].questions[APP.qIndex]; }
+
+const TYPE_LABEL={qcm:'Choix unique',multi:'Choix multiple',vf:'Vrai ou faux',num:'Calcul',
+  classify:'Classement',match:'Association',fill:'Texte à trous',table:'Tableau à compléter',order:'Mise en ordre'};
+
+/* ============================================================
+   PARTIE 5 — HUD, NAVIGATION, PROGRESSION
+   ============================================================ */
+function updateHUD(){
+  $('scoreVal').textContent=APP.score;
+  const sb=$('streakBadge');
+  if(APP.streak>=2){ sb.style.display='inline-flex'; $('streakVal').textContent=APP.streak; }
+  else sb.style.display='none';
+  $('pbar').style.width=(APP.completed.size/LEVELS.length*100)+'%';
+}
+function renderNav(){
+  const nav=$('nav');
+  let h='<button class="nav-dot home'+(APP.current===0?' active':'')+'" onclick="goToExercise(0)" title="Accueil">🏠</button>';
+  LEVELS.forEach((lv,i)=>{
+    const idx=i+1, done=APP.completed.has(idx);
+    h+='<button class="nav-dot'+(APP.current===idx?' active':'')+(done?' done':'')+'" onclick="goToExercise('+idx+')" title="'+esc(lv.title)+'">'+idx+'</button>';
+  });
+  nav.innerHTML=h;
+}
+
+/* ============================================================
+   PARTIE 6 — ÉCRANS
+   ============================================================ */
+let levelPhase='theory';
+
+function goToExercise(idx){
+  APP.current=idx;
+  if(idx===0){ renderHome(); }
+  else{
+    levelPhase='theory'; APP.qIndex=0;
+    if(!APP.completedExercises.includes(idx)) startExerciseTimer(idx);
+    setDrawer(LEVELS[idx-1]);
+    renderLevel();
+  }
+  renderNav(); updateHUD();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderHome(){
+  const done=APP.completed.size, total=LEVELS.length;
+  const who = APP.email
+    ? '<div class="who"><span class="pill">👤 '+esc(nameFromEmail(APP.email))+'</span>'+(APP.classe?'<span class="pill">🏫 '+esc(APP.classe)+'</span>':'')+'</div>'
+    : '';
+  let cards='';
+  LEVELS.forEach((lv,i)=>{
+    const idx=i+1, s=APP.levelStats[idx], done=APP.completed.has(idx);
+    const pct=s? Math.round(s.pts/s.max*100):0;
+    const stars=done? (pct>=85?'★★★':pct>=65?'★★☆':'★☆☆') : '☆☆☆';
+    cards+='<button class="lvl-card'+(done?' done':'')+'" onclick="goToExercise('+idx+')">'
+      +'<span class="tag">'+(done?'Terminé':'À faire')+'</span>'
+      +'<span class="ico">'+lv.icon+'</span>'
+      +'<div class="num">NIVEAU '+idx+'</div>'
+      +'<h3>'+esc(lv.title)+'</h3><p>'+esc(lv.sub)+'</p>'
+      +'<div class="foot"><span class="stars" style="color:'+(done?'var(--gold)':'var(--text3)')+'">'+stars+'</span>'
+      +'<span>'+(done? pct+'% · '+s.pts+' pts' : lv.questions.length+' questions')+'</span></div></button>';
+  });
+  $('main').innerHTML='<div class="screen">'
+   +'<section class="hero">'
+     +'<div class="eyebrow">Institut Saint-Luc — Frameries · 6<sup>e</sup> Technicien en comptabilité</div>'
+     +'<h1>Module 0 — <em>rappels et prérequis</em></h1>'
+     +'<p class="lead" style="margin-top:10px">Le bilan, le compte de résultats, le plan comptable, les écritures et la TVA. Sept niveaux pour reconstruire toute la mécanique comptable — théorie sous les yeux, deux essais par question, et un tuteur qui te met sur la piste sans jamais te donner la réponse.</p>'
+     +'<div class="tw"><div><div class="tw-h">DÉBIT</div><div class="tw-v d">Actif ↗ · Charges ↗</div></div>'
+     +'<div><div class="tw-h">CRÉDIT</div><div class="tw-v c">Passif ↗ · Produits ↗</div></div></div>'
+     +who
+     +'<div class="btn-row"><button class="btn btn-primary" onclick="goToExercise('+(nextLevel())+')">'+(done>0?'Reprendre':'Commencer')+' — niveau '+nextLevel()+' ➜</button>'
+     +'<button class="btn btn-acc btn-sm" onclick="openLB(\'app\')">🏆 Classement</button>'
+     +'<button class="btn btn-org btn-sm" onclick="openLB(\'global\')">🌍 Général</button></div>'
+   +'</section>'
+   +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 4px"><h2>Les 7 niveaux</h2>'
+   +'<span class="qcount">'+done+' / '+total+' terminés</span></div>'
+   +'<p style="font-size:.86rem">Tu choisis ton ordre. Chaque niveau commence par sa fiche théorique, qui reste accessible pendant les questions.</p>'
+   +'<div class="hub-grid">'+cards+'</div>'
+   +(done===total? '<div class="btn-row" style="justify-content:center;margin-top:22px"><button class="btn btn-primary" onclick="showFinal()">🏁 Voir mon bilan final</button></div>':'')
+   +'</div>';
+  $('theoryFab').classList.remove('on');
+}
+function nextLevel(){ for(let i=1;i<=LEVELS.length;i++) if(!APP.completed.has(i)) return i; return 1; }
+function nameFromEmail(e){ return String(e).split('@')[0].split(/[._-]/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
+
+/* ---------- Théorie ---------- */
+function setDrawer(lv){ $('drawerTitle').textContent='Niveau '+lv.id+' — '+lv.title; $('drawerBody').innerHTML=lv.theory; }
+function openTheory(){ $('drawer').classList.add('open'); $('scrim').classList.add('open'); }
+function closeTheory(){ $('drawer').classList.remove('open'); $('scrim').classList.remove('open'); }
+
+function renderLevel(){
+  const lv=LEVELS[APP.current-1];
+  if(levelPhase==='theory'){
+    $('theoryFab').classList.remove('on');
+    $('main').innerHTML='<div class="screen">'
+      +'<div class="eyebrow">Niveau '+lv.id+' · Fiche théorique</div>'
+      +'<h1 style="font-size:1.7rem">'+lv.icon+' '+esc(lv.title)+'</h1>'
+      +'<p class="lead" style="margin:8px 0 4px">'+esc(lv.goal)+'</p>'
+      +'<div class="callout c-note" style="margin-top:16px"><div class="ct">📖 Bon à savoir</div>Cette fiche reste disponible pendant tout le niveau : le bouton <b>Théorie</b> en bas à droite la rouvre à tout moment. L\'objectif n\'est pas de tout retenir maintenant, mais de <b>manipuler</b> ces informations pour te les approprier.</div>'
+      +'<div class="card" style="margin-top:16px"><div class="theory">'+lv.theory+'</div></div>'
+      +'<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" onclick="startQuiz()">Passer aux questions ➜ <span style="opacity:.7">('+lv.questions.length+')</span></button>'
+      +'<button class="btn btn-ghost" onclick="goToExercise(0)">Retour à l\'accueil</button></div></div>';
+  } else if(levelPhase==='quiz'){
+    $('theoryFab').classList.add('on');
+    renderQuestion();
+  }
+}
+function startQuiz(){
+  APP.qIndex=0; levelPhase='quiz';
+  const li=APP.current-1;
+  LEVELS[li].questions.forEach((q,qi)=>{ if(QSTATE[li+'_'+qi].status===null) QSTATE[li+'_'+qi]=buildQState(q); });
+  renderLevel(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   PARTIE 7 — MOTEUR DE QUESTIONS
+   ============================================================ */
+function renderQuestion(){
+  const lv=LEVELS[APP.current-1], q=qdef(), st=qs();
+  const n=lv.questions.length;
+  const locked = st.status!==null;
+  let dots=''; for(let i=0;i<2;i++) dots+='<span class="att-dot'+(st.attempts>i && st.status!=='first'?(st.attempts>i?' used':''):'')+'"></span>';
+  if(st.status==='first') dots='<span class="att-dot"></span><span class="att-dot"></span>';
+
+  $('main').innerHTML='<div class="screen"><div class="card">'
+    +'<div class="qhead"><span class="qcount">NIVEAU '+lv.id+' · QUESTION '+(APP.qIndex+1)+' / '+n+'</span>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<span class="qtype">'+TYPE_LABEL[q.t]+'</span><span class="qpts">'+q.pts+' pts</span>'
+    +'<span class="attempts" title="Essais restants">'+dots+'</span></div></div>'
+    +'<div class="qtext">'+q.q+'</div>'
+    +(q.sub?'<div class="qsub">'+q.sub+'</div>':'')
+    +'<div id="qbody"></div><div id="qfb"></div>'
+    +'<div class="qfoot"><button class="btn btn-ghost btn-sm" onclick="openTheory()">📖 Revoir la théorie</button>'
+    +'<div id="qact"></div></div></div></div>';
+  renderQBody(); renderFeedback(); renderAction();
+}
+
+function renderQBody(){
+  const q=qdef(), st=qs(), locked=st.status!==null;
+  $('qbody').innerHTML=BODY[q.t](q,st,locked);
+}
+
+const BODY={
+/* ---------- QCM / VRAI-FAUX ---------- */
+qcm:function(q,st,locked){
+  const order=st.view.order, letters='ABCDEF';
+  let h='<div class="opts">';
+  order.forEach((oi,pos)=>{
+    let cls='opt';
+    if(locked){ cls+=' locked'; if(oi===q.a) cls+=' good'; else if(st.ans===oi) cls+=' bad'; }
+    else if(st.ans===oi) cls+=' sel';
+    h+='<button class="'+cls+'"'+(locked?'':' onclick="pick('+oi+')"')+'>'
+      +'<span class="mk">'+letters[pos]+'</span><span>'+q.opts[oi]+'</span></button>';
+  });
+  return h+'</div>';
+},
+vf:function(q,st,locked){
+  let h='<div class="opts">';
+  ['Vrai','Faux'].forEach((lab,i)=>{
+    let cls='opt';
+    if(locked){ cls+=' locked'; if(i===q.a) cls+=' good'; else if(st.ans===i) cls+=' bad'; }
+    else if(st.ans===i) cls+=' sel';
+    h+='<button class="'+cls+'"'+(locked?'':' onclick="pick('+i+')"')+'>'
+      +'<span class="mk">'+(i===0?'V':'F')+'</span><span>'+lab+'</span></button>';
+  });
+  return h+'</div>';
+},
+multi:function(q,st,locked){
+  const order=st.view.order;
+  let h='<div class="qsub" style="margin-bottom:10px">Plusieurs réponses possibles.</div><div class="opts">';
+  order.forEach(oi=>{
+    const sel=st.ans.indexOf(oi)>-1, good=q.a.indexOf(oi)>-1;
+    let cls='opt multi';
+    if(locked){ cls+=' locked'; if(good) cls+=' good'; else if(sel) cls+=' bad'; }
+    else if(sel) cls+=' sel';
+    h+='<button class="'+cls+'"'+(locked?'':' onclick="pickMulti('+oi+')"')+'>'
+      +'<span class="mk">'+(sel||(locked&&good)?'✓':'')+'</span><span>'+q.opts[oi]+'</span></button>';
+  });
+  return h+'</div>';
+},
+/* ---------- NUMÉRIQUE ---------- */
+num:function(q,st,locked){
+  if(locked){
+    const ok=nearly(parseNum(st.ans),q.a,q.tol);
+    return '<div class="numrow"><input class="nin '+(ok?'good':'bad')+'" value="'+esc(st.ans)+'" disabled>'
+      +'<span class="unit">'+(q.unit||'')+'</span>'
+      +(ok?'':'<span class="unit" style="color:var(--success)">→ '+fmt(q.a)+' '+(q.unit||'')+'</span>')+'</div>';
+  }
+  return '<div class="numwrap"><div class="numrow">'
+    +'<input class="nin" id="numIn" inputmode="decimal" autocomplete="off" placeholder="0,00" value="'+esc(st.ans)+'" '
+    +'oninput="setNum(this.value)" onkeydown="if(event.key===\'Enter\')checkAnswer()">'
+    +'<span class="unit">'+(q.unit||'')+'</span></div>'
+    +'<div class="calc" id="calcPrev"></div>'
+    +'<div class="qsub" style="margin-top:6px">Virgule ou point acceptés. Tu peux aussi taper ton calcul (ex. : <code style="font-family:\'Space Mono\',monospace">2000*6/100</code>).</div></div>';
+},
+/* ---------- CLASSEMENT ---------- */
+classify:function(q,st,locked){
+  const disp=st.view.items;
+  let pool='';
+  disp.forEach(i=>{
+    if(st.ans[i]!==null) return;
+    pool+='<button class="chip'+(st.view.sel===i?' sel':'')+'"'+(locked?'':' onclick="chipPick('+i+')"')+'>'+esc(q.items[i].x)+'</button>';
+  });
+  let b='<div class="buckets">';
+  q.buckets.forEach((name,bi)=>{
+    let inner='',count=0;
+    disp.forEach(i=>{
+      if(st.ans[i]!==bi) return; count++;
+      let cls='chip';
+      if(locked) cls+=(q.items[i].b===bi?' good':' bad');
+      const fx=(locked&&q.items[i].b!==bi)?'<span class="fx">→ '+esc(q.buckets[q.items[i].b])+'</span>':'';
+      inner+='<button class="'+cls+'"'+(locked?'':' onclick="chipBack('+i+')"')+'>'+esc(q.items[i].x)+fx+'</button>';
+    });
+    b+='<div class="bucket b'+bi+'"'+(locked?'':' onclick="chipDrop('+bi+')"')+'>'
+      +'<div class="bucket-h"><span>'+esc(name)+'</span><span>'+count+'</span></div>'
+      +'<div class="bucket-items">'+inner+'</div></div>';
+  });
+  return (locked?'':'<div class="pool">'+pool+'</div>')+b+'</div>';
+},
+/* ---------- ASSOCIATION ---------- */
+match:function(q,st,locked){
+  let h='';
+  st.view.left.forEach(i=>{
+    const p=q.pairs[i], val=st.ans[i], ok=val===p.r;
+    if(locked){
+      h+='<div class="match-row"><div class="match-l">'+esc(p.l)+'</div><div class="match-arrow">→</div>'
+        +'<div class="match-l" style="border-color:'+(ok?'var(--success)':'var(--error)')+';background:'+(ok?'rgba(34,214,138,.1)':'rgba(255,77,109,.08)')+'">'
+        +'<span class="mono'+(ok?' fix':' was')+'">'+esc(val||'—')+'</span>'+(ok?'':' <span class="mono fix">➜ '+esc(p.r)+'</span>')+'</div></div>';
+    }else{
+      let opts='<option value="">— choisir —</option>';
+      st.view.right.forEach(r=>{ opts+='<option value="'+esc(r)+'"'+(val===r?' selected':'')+'>'+esc(r)+'</option>'; });
+      h+='<div class="match-row"><div class="match-l">'+esc(p.l)+'</div><div class="match-arrow">→</div>'
+        +'<select class="msel" onchange="setMatch('+i+',this.value)">'+opts+'</select></div>';
+    }
+  });
+  return h;
+},
+/* ---------- TEXTE À TROUS ---------- */
+fill:function(q,st,locked){
+  let h='<div class="filltext">'+q.text.replace(/\{(\d+)\}/g,function(m,d){
+    const i=parseInt(d,10), val=st.ans[i], ok=val===q.a[i];
+    if(locked){
+      if(ok) return '<span class="mono fix">'+esc(val||'…')+'</span>';
+      return '<span class="mono was">'+esc(val||'…')+'</span>'
+        +' <span class="mono fix">➜ '+esc(q.a[i])+'</span>';
+    }
+    let o='<option value="">…</option>';
+    st.view.bank.forEach(w=>{ o+='<option value="'+esc(w)+'"'+(val===w?' selected':'')+'>'+esc(w)+'</option>'; });
+    return '<select class="fsel" onchange="setFill('+i+',this.value)">'+o+'</select>';
+  })+'</div>';
+  return h;
+},
+/* ---------- TABLEAU ---------- */
+table:function(q,st,locked){
+  if(locked && q.anyOrder) return tableReview(q,st);
+  let h='<div class="qtable-wrap"><table class="qtable"><tr>';
+  q.cols.forEach(c=>{
+    const k=c.toLowerCase();
+    const cls = (k.indexOf('débit')>-1||k==='sd') ? ' class="hd"' : (k.indexOf('crédit')>-1||k==='sc') ? ' class="hc"' : '';
+    h+='<th'+cls+'>'+esc(c)+'</th>';
+  });
+  h+='</tr>';
+  q.rows.forEach((row,ri)=>{
+    h+='<tr>';
+    row.forEach((cell,ci)=>{
+      h+='<td>'+cellHTML(q,st,cell,ri,ci,locked)+'</td>';
+    });
+    h+='</tr>';
+  });
+  return h+'</table></div>'+(locked?'':'<div class="qsub" style="margin-top:8px">Laisse vide une case sans montant. Tu peux taper un calcul dans les cases chiffrées.</div>');
+},
+/* ---------- MISE EN ORDRE ---------- */
+order:function(q,st,locked){
+  let pool='';
+  st.view.pool.forEach(i=>{
+    if(st.ans.indexOf(i)>-1) return;
+    pool+='<button class="chip" onclick="orderAdd('+i+')">'+esc(q.items[i])+'</button>';
+  });
+  let seq='';
+  st.ans.forEach((i,pos)=>{
+    let cls='oitem';
+    if(locked) cls+=(i===pos?' good':' bad');
+    seq+='<div class="'+cls+'"'+(locked?'':' onclick="orderRemove('+pos+')"')+'>'
+      +'<span class="rk">'+(pos+1)+'.</span><span>'+esc(q.items[i])+'</span></div>';
+  });
+  if(locked){
+    let sol='';
+    q.items.forEach((it,k)=>{ sol+='<div class="oitem good"><span class="rk">'+(k+1)+'.</span><span>'+esc(it)+'</span></div>'; });
+    return '<div class="order-seq">'+seq+'</div>'
+      +'<div class="qsub" style="margin:12px 0 6px">Ordre correct :</div><div class="order-seq">'+sol+'</div>';
+  }
+  return '<div class="order-pool">'+pool+'</div><div class="order-seq">'+seq+'</div>'
+    +(st.ans.length?'<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="orderReset()">↺ Recommencer l\'ordre</button></div>':'');
+}
+};
+
+/* --- Écritures : comparaison ligne par ligne, ordre indifférent --- */
+function normTableRow(q,row,vals){
+  const out=[];
+  row.forEach((c,ci)=>{
+    if(c.k==='txt'){ out.push('T:'+c.v); return; }
+    if(c.k==='sel'||c.k==='sel2'){
+      let v=String(vals[ci]==null?'':vals[ci]).trim();
+      if(v===''||v==='—') v='—';
+      out.push('S:'+v); return;
+    }
+    const calc=tryCalc(vals[ci]);
+    const num = calc!==null ? calc : parseNum(vals[ci]);
+    out.push('N:'+((isNaN(num)||num===0)?'':Math.round(num*100)));
+  });
+  return out.join('|');
+}
+function expectedSigs(q){
+  return q.rows.map(r=>normTableRow(q,r,r.map(c=>c.k==='num'?(c.a===null?'':String(c.a)):(c.a==null?'':c.a))));
+}
+function matchTableRows(q,ans){
+  const exp=expectedSigs(q), used=exp.map(()=>false), res=[];
+  (ans||[]).forEach((vals,ri)=>{
+    const sig=normTableRow(q,q.rows[ri]||q.rows[0],vals);
+    let hit=false;
+    for(let k=0;k<exp.length;k++){ if(!used[k]&&exp[k]===sig){ used[k]=true; hit=true; break; } }
+    res.push(hit);
+  });
+  return {rows:res, ok:res.filter(Boolean).length, tot:q.rows.length};
+}
+function cellText(q,cell,val){
+  if(cell.k==='txt') return esc(cell.v);
+  if(cell.k==='sel'||cell.k==='sel2'){ const v=String(val||'').trim(); return esc(v===''?'—':v); }
+  const calc=tryCalc(val); const num=calc!==null?calc:parseNum(val);
+  return (isNaN(num)||num===0)?'—':fmt(num);
+}
+
+function cellHTML(q,st,cell,ri,ci,locked){
+  const val=st.ans[ri][ci];
+  if(cell.k==='txt') return '<span class="fixed">'+esc(cell.v)+'</span>';
+  if(cell.k==='sel'||cell.k==='sel2'){
+    const list=(cell.k==='sel'?q.selOpts:q.selOpts2)||[];
+    const ok=(val||'')===cell.a || (cell.a==='—'&&(val===''||val==='—'));
+    if(locked){
+      return '<span class="mono" style="color:'+(ok?'var(--success)':'var(--error)')+'">'+esc(val||'—')+'</span>'
+        +(ok?'':'<br><span class="mono" style="color:var(--success);font-size:.78rem">'+esc(cell.a)+'</span>');
+    }
+    let o='';
+    list.forEach(x=>{ o+='<option value="'+esc(x)+'"'+(val===x?' selected':'')+'>'+esc(x)+'</option>'; });
+    return '<select class="csel" onchange="setCell('+ri+','+ci+',this.value)">'+o+'</select>';
+  }
+  /* numérique */
+  const uv=parseNum(val);
+  const ok = (cell.a===null) ? (isNaN(uv)||uv===0) : nearly(uv,cell.a,q.tol);
+  if(locked){
+    if(ok) return '<span class="mono" style="color:var(--success)">'+(cell.a===null?'—':fmt(cell.a))+'</span>';
+    return '<span class="mono" style="color:var(--error);text-decoration:line-through">'+esc(val||'(vide)')+'</span>'
+      +'<br><span class="mono" style="color:var(--success);font-size:.78rem">'+(cell.a===null?'(laisser vide)':fmt(cell.a))+'</span>';
+  }
+  return '<input class="cin" inputmode="decimal" autocomplete="off" placeholder="—" value="'+esc(val)+'" oninput="setCell('+ri+','+ci+',this.value)">';
+}
+
+/* Relecture d'une écriture : ce que l'élève a écrit, puis l'écriture correcte */
+function tableReview(q,st){
+  const m=matchTableRows(q,st.ans);
+  const head='<tr>'+q.cols.map(c=>{
+    const k=c.toLowerCase();
+    const cls=(k.indexOf('débit')>-1||k==='sd')?' class="hd"':(k.indexOf('crédit')>-1||k==='sc')?' class="hc"':'';
+    return '<th'+cls+'>'+esc(c)+'</th>';
+  }).join('')+'</tr>';
+
+  const allOk = m.ok===m.tot && (st.ans||[]).length===m.tot;
+  let mine='<div class="sol-lbl">'+(allOk?'Ton écriture ✓':'Ton écriture')+'</div><div class="qtable-wrap"><table class="qtable">'+head;
+  q.rows.forEach((row,ri)=>{
+    mine+='<tr class="'+(m.rows[ri]?'rgood':'rbad')+'">';
+    row.forEach((cell,ci)=>{
+      const txt=cellText(q,cell,(st.ans[ri]||[])[ci]);
+      mine+='<td><span class="mono" style="color:'+(m.rows[ri]?'var(--success)':'var(--error)')+'">'+txt+'</span></td>';
+    });
+    mine+='</tr>';
+  });
+  mine+='</table></div>';
+
+  let sol='<div class="sol-lbl">Écriture correcte</div><div class="qtable-wrap"><table class="qtable">'+head;
+  q.rows.forEach(row=>{
+    sol+='<tr class="rgood">';
+    row.forEach(cell=>{
+      const v=cell.k==='num'?(cell.a===null?'':String(cell.a)):(cell.a==null?'':cell.a);
+      sol+='<td><span class="mono fix">'+cellText(q,cell,v)+'</span></td>';
+    });
+    sol+='</tr>';
+  });
+  sol+='</table></div>';
+
+  const note='<div class="qsub" style="margin-top:10px">Les lignes peuvent être écrites dans n\'importe quel ordre : seule la correspondance compte / colonne / montant est évaluée.</div>';
+  return allOk ? mine+note : mine+sol+note;
+}
+
+/* ---------- Interactions ---------- */
+function pick(i){ qs().ans=i; renderQBody(); renderAction(); }
+function pickMulti(i){ const a=qs().ans, k=a.indexOf(i); if(k>-1)a.splice(k,1); else a.push(i); renderQBody(); renderAction(); }
+function setNum(v){ qs().ans=v; const r=tryCalc(v); const el=$('calcPrev');
+  if(el) el.textContent = (r!==null) ? '= '+fmt(r) : ''; renderAction(); }
+function chipPick(i){ const st=qs(); st.view.sel = (st.view.sel===i?null:i); renderQBody(); }
+function chipDrop(b){ const st=qs(); if(st.view.sel==null) return; st.ans[st.view.sel]=b; st.view.sel=null; renderQBody(); renderAction(); }
+function chipBack(i){ const st=qs(); st.ans[i]=null; st.view.sel=null; renderQBody(); renderAction(); }
+function setMatch(i,v){ qs().ans[i]=v; renderAction(); }
+function setFill(i,v){ qs().ans[i]=v; renderAction(); }
+function setCell(r,c,v){ qs().ans[r][c]=v; renderAction(); }
+function orderAdd(i){ qs().ans.push(i); renderQBody(); renderAction(); }
+function orderRemove(pos){ qs().ans.splice(pos,1); renderQBody(); renderAction(); }
+function orderReset(){ qs().ans=[]; renderQBody(); renderAction(); }
+
+/* ---------- Complétude & validation ---------- */
+function isComplete(q,st){
+  switch(q.t){
+    case 'qcm': case 'vf': return st.ans!==null;
+    case 'multi': return st.ans.length>0;
+    case 'num': return !isNaN(parseNum(st.ans))||tryCalc(st.ans)!==null;
+    case 'classify': return st.ans.every(v=>v!==null);
+    case 'match': return st.ans.every(v=>v!=='');
+    case 'fill': return st.ans.every(v=>v!=='');
+    case 'order': return st.ans.length===q.items.length;
+    case 'table': return q.rows.some((r,ri)=>r.some((c,ci)=>c.k!=='txt'&&String(st.ans[ri][ci]).trim()!==''));
+  }
+  return false;
+}
+function scoreParts(q,st){
+  let ok=0,tot=0;
+  const num=v=>{ const c=tryCalc(v); return c!==null?c:parseNum(v); };
+  switch(q.t){
+    case 'qcm': case 'vf': tot=1; ok=(st.ans===q.a)?1:0; break;
+    case 'multi':
+      tot=q.opts.length;
+      q.opts.forEach((_,i)=>{ const sel=st.ans.indexOf(i)>-1, good=q.a.indexOf(i)>-1; if(sel===good) ok++; });
+      break;
+    case 'num': tot=1; ok=nearly(num(st.ans),q.a,q.tol)?1:0; break;
+    case 'classify': tot=q.items.length; q.items.forEach((it,i)=>{ if(st.ans[i]===it.b) ok++; }); break;
+    case 'match': tot=q.pairs.length; q.pairs.forEach((p,i)=>{ if(st.ans[i]===p.r) ok++; }); break;
+    case 'fill': tot=q.a.length; q.a.forEach((v,i)=>{ if(st.ans[i]===v) ok++; }); break;
+    case 'order': tot=q.items.length; q.items.forEach((_,i)=>{ if(st.ans[i]===i) ok++; }); break;
+    case 'table':
+      if(q.anyOrder){ const m=matchTableRows(q,st.ans); return {ok:m.ok, tot:m.tot}; }
+      q.rows.forEach((row,ri)=>row.forEach((c,ci)=>{
+        if(c.k==='txt') return; tot++;
+        const v=st.ans[ri][ci];
+        if(c.k==='sel'||c.k==='sel2'){ if((v||'')===c.a || (c.a==='—'&&(v===''||v==='—'))) ok++; }
+        else{ const uv=num(v); if(c.a===null? (isNaN(uv)||uv===0) : nearly(uv,c.a,q.tol)) ok++; }
+      }));
+      break;
+  }
+  return {ok:ok,tot:tot};
+}
+/* Normalise les expressions tapées en valeur finale avant verrouillage */
+function bakeCalc(q,st){
+  const bake=v=>{ const c=tryCalc(v); return c!==null? String(c).replace('.',',') : v; };
+  if(q.t==='num') st.ans=bake(st.ans);
+  if(q.t==='table') st.ans=st.ans.map((r,ri)=>r.map((v,ci)=> q.rows[ri][ci].k==='num'? bake(v):v ));
+}
+
+/* ---------- Correction en deux temps ---------- */
+function checkAnswer(){
+  const q=qdef(), st=qs();
+  if(st.status!==null) return;
+  if(!isComplete(q,st)) return;
+  bakeCalc(q,st);
+  const p=scoreParts(q,st), correct=(p.ok===p.tot);
+  st.attempts++;
+  st.parts=p;
+  if(correct){
+    st.status = (st.attempts===1)?'first':'second';
+    st.gained = (st.attempts===1)? q.pts : Math.round(q.pts*0.6);
+    APP.score+=st.gained; APP.streak++; if(APP.streak>APP.bestStreak)APP.bestStreak=APP.streak;
+  } else if(st.attempts>=2){
+    st.status='shown'; st.gained=0; APP.streak=0;
+  } else {
+    APP.streak=0;
+  }
+  updateHUD(); renderQuestion();
+  setTimeout(()=>{ const fb=$('qfb'); if(fb&&fb.firstChild) fb.scrollIntoView({behavior:'smooth',block:'center'}); },60);
+}
+
+function renderFeedback(){
+  const q=qdef(), st=qs(), el=$('qfb');
+  if(!el) return;
+  if(st.status==='first'||st.status==='second'){
+    const t = st.status==='first' ? '✅ Exact, du premier coup.' : '🔄 C\'est juste au deuxième essai.';
+    el.innerHTML='<div class="fb ok"><div class="fbt">'+t+' <span style="color:var(--gold);font-size:.85rem">+'+st.gained+' pts</span></div>'
+      +'<p>'+q.ex+'</p></div>';
+    return;
+  }
+  if(st.status==='shown'){
+    el.innerHTML='<div class="fb show"><div class="fbt">👁 Voici la réponse et le raisonnement</div>'
+      +'<p>'+q.ex+'</p></div>';
+    return;
+  }
+  if(st.attempts===1){
+    let part='';
+    if(st.parts && st.parts.tot>1) part='<div class="sol"><b>'+st.parts.ok+' / '+st.parts.tot+'</b> éléments sont déjà corrects — corrige les autres.</div>';
+    el.innerHTML='<div class="fb hint"><div class="fbt">🤔 Pas encore. Un coup de pouce :</div>'
+      +'<p>'+q.hint+'</p>'+part
+      +'<div class="sol" style="font-size:.83rem">Il te reste <b>un essai</b>. La fiche théorique est toujours ouverte via le bouton 📖.</div></div>';
+    return;
+  }
+  el.innerHTML='';
+}
+
+function renderAction(){
+  const q=qdef(), st=qs(), el=$('qact');
+  if(!el) return;
+  const last = APP.qIndex >= LEVELS[APP.current-1].questions.length-1;
+  if(st.status!==null){
+    el.innerHTML='<button class="btn btn-primary" onclick="nextQuestion()">'+(last?'Voir le bilan du niveau 🏁':'Question suivante ➜')+'</button>';
+  }else{
+    const ready=isComplete(q,st);
+    el.innerHTML='<button class="btn btn-primary" onclick="checkAnswer()"'+(ready?'':' disabled')+'>'
+      +(st.attempts===1?'Vérifier (dernier essai)':'Vérifier')+'</button>';
+  }
+}
+
+function nextQuestion(){
+  const lv=LEVELS[APP.current-1];
+  if(APP.qIndex < lv.questions.length-1){ APP.qIndex++; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
+  else finishLevel();
+}
+
+/* ============================================================
+   PARTIE 8 — BILANS
+   ============================================================ */
+function levelResults(idx){
+  const li=idx-1, lv=LEVELS[li];
+  let first=0,second=0,shown=0,pts=0,max=0;
+  lv.questions.forEach((q,qi)=>{
+    const st=QSTATE[li+'_'+qi]; max+=q.pts;
+    if(!st) return;
+    if(st.status==='first'){first++;pts+=st.gained;}
+    else if(st.status==='second'){second++;pts+=st.gained;}
+    else if(st.status==='shown'){shown++;}
+  });
+  return {first:first,second:second,shown:shown,pts:pts,max:max,total:lv.questions.length};
+}
+function gradeOf(pct){
+  if(pct>=85) return {g:'A',l:'Excellent',msg:"Maîtrise solide : tu peux enchaîner sur les écritures et l'encodage sans filet."};
+  if(pct>=65) return {g:'B',l:'Très bien',msg:"Bonne base. Reprends les questions marquées 🔄 : ce sont tes points fragiles, pas tes lacunes."};
+  if(pct>=45) return {g:'C',l:'Satisfaisant',msg:"Les mécanismes sont là mais encore hésitants. Relis les fiches théoriques avant de recommencer."};
+  return {g:'D',l:'À retravailler',msg:"Reprends la théorie point par point, puis refais le niveau : c'est en manipulant que ça rentre."};
+}
+function medalOf(pct){ return pct>=90?'🏆':pct>=70?'🥇':pct>=50?'🥈':'🥉'; }
+
+function legendHTML(){
+  return '<div class="legend"><span><i class="dotc g"></i> Trouvé du 1<sup>er</sup> coup</span>'
+    +'<span><i class="dotc o"></i> Corrigé au 2<sup>e</sup> essai</span>'
+    +'<span><i class="dotc r"></i> Réponse montrée</span></div>';
+}
+
+function finishLevel(){
+  const idx=APP.current;
+  const r=levelResults(idx);
+  APP.levelStats[idx]=r;
+  APP.completed.add(idx);
+  completeExercise(idx);
+  levelPhase='result';
+  $('theoryFab').classList.remove('on');
+  const pct1=Math.round(r.first/r.total*100);
+  const pctP=Math.round(r.pts/r.max*100);
+  const g=gradeOf(pct1);
+  const lv=LEVELS[idx-1];
+  const t=APP.exerciseTimes[idx];
+
+  let rows='';
+  lv.questions.forEach((q,qi)=>{
+    const st=QSTATE[(idx-1)+'_'+qi];
+    const ic = st.status==='first'?'<span style="color:var(--success)">✅</span>':st.status==='second'?'<span style="color:var(--orange)">🔄</span>':'<span style="color:var(--error)">👁</span>';
+    rows+='<tr><td style="color:var(--text3);font-family:\'Space Mono\',monospace">Q'+(qi+1)+'</td>'
+      +'<td>'+TYPE_LABEL[q.t]+'</td><td class="c">'+ic+'</td>'
+      +'<td class="c" style="color:var(--gold)">'+(st.gained||0)+'/'+q.pts+'</td></tr>';
+  });
+
+  const nxt = idx<LEVELS.length? idx+1 : null;
+  const allDone = APP.completed.size===LEVELS.length;
+
+  $('main').innerHTML='<div class="screen"><div class="card res-hero">'
+    +'<div class="medal">'+medalOf(pct1)+'</div>'
+    +'<div class="eyebrow" style="margin-bottom:2px">Niveau '+idx+' terminé</div>'
+    +'<h2 style="font-size:1.35rem">'+esc(lv.title)+'</h2>'
+    +'<div style="margin:12px 0 2px"><span class="grade">'+g.g+'</span> <span style="font-weight:800;color:var(--text2)">'+g.l+'</span></div>'
+    +'<p style="max-width:44ch;margin:6px auto 0;font-size:.9rem">'+g.msg+'</p>'
+    +legendHTML()
+    +'<div class="stats">'
+      +'<div class="stat"><div class="v" style="color:var(--success)">'+r.first+'</div><div class="l">1<sup>er</sup> coup</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--orange)">'+r.second+'</div><div class="l">2<sup>e</sup> essai</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--error)">'+r.shown+'</div><div class="l">Montrées</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--gold)">'+r.pts+'</div><div class="l">Points</div></div>'
+      +(t?'<div class="stat"><div class="v mono" style="font-size:1.1rem">'+fmtTime(t)+'</div><div class="l">Temps</div></div>':'')
+    +'</div>'
+    +'<div style="text-align:left"><div class="qsub" style="margin-bottom:4px">Réussite au 1<sup>er</sup> essai : <b style="color:var(--text)">'+pct1+'%</b> · Points : <b style="color:var(--text)">'+pctP+'%</b></div>'
+    +'<div class="bar"><i style="width:'+pctP+'%"></i></div></div>'
+    +'<table class="recap"><tr><th></th><th>Type</th><th style="text-align:center">Résultat</th><th style="text-align:center">Points</th></tr>'+rows+'</table>'
+    +'<div class="btn-row" style="justify-content:center">'
+      +(nxt?'<button class="btn btn-primary" onclick="goToExercise('+nxt+')">Niveau '+nxt+' ➜</button>':'')
+      +(allDone?'<button class="btn btn-primary" onclick="showFinal()">🏁 Bilan final du module</button>':'')
+      +'<button class="btn btn-ghost btn-sm" onclick="retryLevel('+idx+')">🔄 Refaire ce niveau</button>'
+      +'<button class="btn btn-ghost btn-sm" onclick="goToExercise(0)">🏠 Accueil</button>'
+    +'</div></div></div>';
+  updateHUD(); renderNav();
+  if(pct1>=70) confetti();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function retryLevel(idx){
+  const s=APP.levelStats[idx];
+  if(s){ APP.score=Math.max(0,APP.score-s.pts); delete APP.levelStats[idx]; }
+  APP.completed.delete(idx);
+  LEVELS[idx-1].questions.forEach((q,qi)=>{ QSTATE[(idx-1)+'_'+qi]=buildQState(q); });
+  goToExercise(idx);
+}
+
+function showFinal(){
+  APP.current=0; levelPhase='result';
+  $('theoryFab').classList.remove('on');
+  let tf=0,ts=0,tsh=0,tp=0,tm=0,tq=0,ttime=0;
+  let rows='';
+  LEVELS.forEach((lv,i)=>{
+    const idx=i+1, r=APP.levelStats[idx];
+    if(r){ tf+=r.first; ts+=r.second; tsh+=r.shown; tp+=r.pts; tm+=r.max; tq+=r.total; }
+    ttime+=APP.exerciseTimes[idx]||0;
+    const p=r?Math.round(r.pts/r.max*100):0;
+    rows+='<tr><td style="font-family:\'Space Mono\',monospace;color:var(--text3)">'+idx+'</td>'
+      +'<td>'+lv.icon+' '+esc(lv.title)+'</td>'
+      +'<td class="c" style="color:var(--success)">'+(r?r.first:'—')+'</td>'
+      +'<td class="c" style="color:var(--orange)">'+(r?r.second:'—')+'</td>'
+      +'<td class="c" style="color:var(--error)">'+(r?r.shown:'—')+'</td>'
+      +'<td class="c" style="color:var(--gold)">'+(r?r.pts+'/'+r.max:'—')+'</td>'
+      +'<td style="min-width:70px"><div class="bar"><i style="width:'+p+'%"></i></div></td></tr>';
+  });
+  const pct1= tq? Math.round(tf/tq*100):0;
+  const pctP= tm? Math.round(tp/tm*100):0;
+  const g=gradeOf(pct1);
+  const who = APP.email? nameFromEmail(APP.email) : 'Élève';
+
+  $('main').innerHTML='<div class="screen"><div class="card res-hero">'
+    +'<div class="medal">'+medalOf(pct1)+'</div>'
+    +'<div class="eyebrow">Module 0 — bilan final</div>'
+    +'<h1 style="font-size:1.6rem">'+esc(who)+'</h1>'
+    +(APP.classe?'<div class="who" style="justify-content:center"><span class="pill">'+esc(APP.classe)+'</span><span class="pill">Note : '+g.g+' — '+g.l+'</span></div>':'')
+    +'<div style="margin:16px 0 2px"><span class="grade">'+pct1+'%</span></div>'
+    +'<div class="qsub">de réussite au 1<sup>er</sup> essai</div>'
+    +'<p style="max-width:46ch;margin:8px auto 0;font-size:.92rem">'+g.msg+'</p>'
+    +legendHTML()
+    +'<div class="stats">'
+      +'<div class="stat"><div class="v" style="color:var(--success)">'+tf+'</div><div class="l">1<sup>er</sup> coup</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--orange)">'+ts+'</div><div class="l">2<sup>e</sup> essai</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--error)">'+tsh+'</div><div class="l">Montrées</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--gold)">'+tp+'</div><div class="l">Points</div></div>'
+      +'<div class="stat"><div class="v mono" style="font-size:1.05rem">'+fmtTime(ttime)+'</div><div class="l">Temps</div></div>'
+      +'<div class="stat"><div class="v" style="color:var(--orange)">'+APP.bestStreak+'</div><div class="l">Meilleure série</div></div>'
+    +'</div>'
+    +'<div style="text-align:left"><div class="qsub">Score global : <b style="color:var(--text)">'+tp+' / '+tm+' points ('+pctP+'%)</b></div>'
+    +'<div class="bar"><i style="width:'+pctP+'%"></i></div></div>'
+    +'<table class="recap"><tr><th>#</th><th>Niveau</th><th class="c">✅</th><th class="c">🔄</th><th class="c">👁</th><th class="c">Points</th><th></th></tr>'+rows+'</table>'
+    +'<div class="btn-row" style="justify-content:center">'
+      +'<button class="btn btn-acc" onclick="openLB(\'app\')">🏆 Classement du module</button>'
+      +'<button class="btn btn-org" onclick="openLB(\'global\')">🌍 Classement général</button></div>'
+    +'<div class="btn-row" style="justify-content:center">'
+      +'<button class="btn btn-primary" onclick="restartGame()">🔄 Rejouer tout le module</button>'
+      +'<button class="btn btn-ghost btn-sm" onclick="goToExercise(0)">🏠 Accueil</button></div>'
+    +'</div></div>';
+  renderNav(); updateHUD();
+  if(pct1>=70) confetti();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- Confettis ---------- */
+function confetti(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer=$('cfLayer'), colors=['#22d68a','#ffd166','#ff8a3d','#4dabf7','#b197fc','#f783ac'];
+  for(let i=0;i<80;i++){
+    const d=document.createElement('div');
+    d.className='cf';
+    d.style.left=Math.random()*100+'vw';
+    d.style.top='-20px';
+    d.style.background=colors[Math.floor(Math.random()*colors.length)];
+    d.style.animationDuration=(2.2+Math.random()*1.9)+'s';
+    d.style.animationDelay=(Math.random()*.7)+'s';
+    d.style.borderRadius=Math.random()>.6?'50%':'2px';
+    layer.appendChild(d);
+    setTimeout(()=>d.remove(),5200);
+  }
+}
+
+/* ============================================================
+   PARTIE 9 — TRACKING (SPEC v5)
+   ============================================================ */
+function showEmailModal(){
+  const ov=$('emailOverlay'); ov.classList.add('open');
+  const input=$('emailInput');
+  const saved=localStorage.getItem('student_email');
+  if(saved) input.value=saved;
+  $('emailError').textContent='';
+  setTimeout(()=>input.focus(),120);
+}
+
+function validateEmail(){
+  const input=$('emailInput'), btn=$('emailBtn'), errDiv=$('emailError');
+  const email=input.value.trim().toLowerCase();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errDiv.textContent='⚠️ Entre une adresse email valide.'; input.style.borderColor='#ff4d6d'; return;
+  }
+  btn.textContent='⏳ Vérification…'; btn.disabled=true; errDiv.textContent=''; input.style.borderColor='';
+
+  const cbName='_emailCb_'+Date.now();
+  const timeout=setTimeout(()=>{
+    delete window[cbName]; const s=$(cbName); if(s)s.remove();
+    errDiv.textContent='⚠️ Connexion impossible. Vérifie ta connexion internet.';
+    btn.textContent='Vérifier et commencer'; btn.disabled=false;
+  },10000);
+
+  window[cbName]=function(resp){
+    clearTimeout(timeout); delete window[cbName];
+    const s=$(cbName); if(s)s.remove();
+    btn.textContent='Vérifier et commencer'; btn.disabled=false;
+    if(resp && resp.found){
+      const oldEmail=localStorage.getItem('student_email');
+      localStorage.setItem('student_email',email);
+      localStorage.setItem('student_classe',resp.classe||'');
+      APP.email=email; APP.classe=resp.classe||'';
+      if(oldEmail && oldEmail!==email) resetProgression();
+      TRACKING.sessionId=new Date().toISOString();
+      $('emailOverlay').classList.remove('open');
+      startGlobalTimer();
+      renderHome();
+    }else{
+      errDiv.textContent="⚠️ Cette adresse n'est pas enregistrée. Vérifie l'orthographe ou demande à ton professeur de t'ajouter à la liste.";
+      input.style.borderColor='#ff4d6d';
+    }
+  };
+
+  const s=document.createElement('script');
+  s.id=cbName;
+  s.src=TRACKING.scriptUrl+'?action=check_email&email='+encodeURIComponent(email)+'&callback='+cbName;
+  s.onerror=function(){
+    clearTimeout(timeout); delete window[cbName]; s.remove();
+    errDiv.textContent='⚠️ Erreur de connexion au serveur.';
+    btn.textContent='Vérifier et commencer'; btn.disabled=false;
+  };
+  document.body.appendChild(s);
+}
+
+function resetProgression(){
+  APP.score=0; APP.streak=0; APP.bestStreak=0;
+  APP.completed=new Set(); APP.completedExercises=[]; APP.levelStats={};
+  APP.exerciseTimes={}; APP.exerciseScores={}; APP.scoreBeforeExercise=0;
+  initQuestionState(); updateHUD(); renderNav();
+}
+
+/* ---------- Chronomètres ---------- */
+function startGlobalTimer(){
+  APP.globalTimerStart=Date.now();
+  const el=$('globalTimer'); if(el) el.style.display='inline-flex';
+  if(APP.globalTimerInterval) clearInterval(APP.globalTimerInterval);
+  APP.globalTimerInterval=setInterval(updateTimerDisplay,1000);
+  updateTimerDisplay();
+}
+function updateTimerDisplay(){
+  const el=$('globalTimer'); if(!el||!APP.globalTimerStart) return;
+  const e=Math.floor((Date.now()-APP.globalTimerStart)/1000);
+  el.textContent='⏱️ '+String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0');
+}
+function startExerciseTimer(exIdx){
+  APP.exerciseStartTime=Date.now();
+  APP.scoreBeforeExercise=APP.score||0;
+}
+function stopExerciseTimer(exIdx){
+  if(!APP.exerciseStartTime) return null;
+  const t=Math.round((Date.now()-APP.exerciseStartTime)/1000);
+  APP.exerciseTimes[exIdx]=(APP.exerciseTimes[exIdx]||0)+t;
+  APP.exerciseStartTime=null;
+  return {temps:APP.exerciseTimes[exIdx]};
+}
+
+/* ---------- Complétion d'un niveau ---------- */
+function completeExercise(idx){
+  if(APP.completedExercises.indexOf(idx)>-1){ stopExerciseTimer(idx); return; }
+  APP.completedExercises.push(idx);
+  const res=stopExerciseTimer(idx);
+  const r=APP.levelStats[idx]||levelResults(idx);
+  APP.exerciseScores[idx]=r.pts;
+  const niveau='Niveau '+idx+' — '+LEVELS[idx-1].title;
+  sendResult(niveau, r.pts, r.max, res?res.temps:(APP.exerciseTimes[idx]||0));
+}
+
+function sendResult(niveau,points,pointsMax,temps){
+  if(!APP.email) return;
+  const payload={
+    email:APP.email, classe:APP.classe, app:TRACKING.appName,
+    niveau:niveau, points:points, pointsMax:pointsMax, temps:temps,
+    totalNiveaux:TRACKING.totalNiveaux, sessionId:TRACKING.sessionId
+  };
+  console.log('[TRACKING] Envoi:',payload);
+  fetch(TRACKING.scriptUrl,{
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(payload)
+  }).catch(err=>console.warn('[TRACKING] Erreur:',err));
+}
+
+/* ---------- Classements ---------- */
+let currentLBTab='app';
+function openLB(tab){ $('lbOverlay').classList.add('open'); switchLBTab(tab||'app'); }
+function closeLB(){ $('lbOverlay').classList.remove('open'); }
+function switchLBTab(tab){
+  currentLBTab=tab;
+  const a=$('lbTabApp'), g=$('lbTabGlobal');
+  if(tab==='app'){
+    a.style.background='var(--accent)'; a.style.color='#07130c'; a.style.borderColor='var(--accent)';
+    g.style.background='transparent'; g.style.color='var(--orange)'; g.style.borderColor='var(--orange)';
+    $('lbTitle').textContent='🏆 Classement — Module 0'+(APP.classe?' ('+APP.classe+')':'');
+  }else{
+    g.style.background='var(--orange)'; g.style.color='#180c04'; g.style.borderColor='var(--orange)';
+    a.style.background='transparent'; a.style.color='var(--accent)'; a.style.borderColor='var(--accent)';
+    $('lbTitle').textContent='🌍 Classement général'+(APP.classe?' ('+APP.classe+')':'');
+  }
+  fetchLeaderboard(tab);
+}
+function fetchLeaderboard(tab){
+  const content=$('lbContent');
+  content.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">⏳ Chargement…</div>';
+  const action = tab==='app' ? 'leaderboard_app' : 'leaderboard_global';
+  const cbName='_lbCb_'+Date.now();
+  const timeout=setTimeout(()=>{
+    delete window[cbName]; const s=$(cbName); if(s)s.remove();
+    content.innerHTML='<div style="text-align:center;padding:40px"><div style="color:var(--error);margin-bottom:12px">⚠️ Connexion impossible</div>'
+      +'<button class="btn btn-ghost btn-sm" onclick="fetchLeaderboard(\''+tab+'\')">Réessayer</button></div>';
+  },10000);
+  window[cbName]=function(resp){
+    clearTimeout(timeout); delete window[cbName];
+    const s=$(cbName); if(s)s.remove();
+    const lbData = resp && (resp.leaderboard || resp.data);
+    if(!lbData || lbData.length===0){
+      content.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">🏁 Aucun résultat pour le moment</div>'; return;
+    }
+    renderLeaderboard(lbData,tab);
+  };
+  let url=TRACKING.scriptUrl+'?action='+action+'&callback='+cbName+'&mode=last';
+  if(tab==='app') url+='&app='+encodeURIComponent(TRACKING.appName);
+  if(APP.classe) url+='&classe='+encodeURIComponent(APP.classe);
+  const s=document.createElement('script');
+  s.id=cbName; s.src=url;
+  s.onerror=function(){ clearTimeout(timeout); delete window[cbName]; s.remove();
+    content.innerHTML='<div style="text-align:center;padding:40px;color:var(--error)">⚠️ Erreur de connexion</div>'; };
+  document.body.appendChild(s);
+}
+function renderLeaderboard(data,tab){
+  const content=$('lbContent');
+  const myEmail=(APP.email||'').toLowerCase();
+  if(tab==='global' && data.length>0){
+    data=data.slice().sort(function(a,b){
+      const pa=a.pct||0, pb=b.pct||0;
+      if(pb!==pa) return pb-pa;
+      return (a.totalTemps||0)-(b.totalTemps||0);
+    });
+    data.forEach(function(e,i){ e.rang=i+1; });
+  }
+  const me=data.filter(function(r){return r.email===myEmail;})[0];
+  let html='';
+  if(me){
+    const pct=me.pct!=null?me.pct:(me.pourcentage!=null?me.pourcentage:0);
+    const count= tab==='app' ? (me.niveauxCompletes||me.niveaux||0) : (me.appsCompletes||me.apps||0);
+    const total= tab==='app' ? (me.totalNiveaux||0) : (me.totalPossibleNiveaux||0);
+    const label= tab==='app' ? 'niveaux' : 'apps';
+    const prog= total>0 ? count+'/'+total+' '+label : count+' '+label;
+    const pc= pct>=80?'var(--success)':pct>=50?'var(--orange)':'var(--error)';
+    html+='<div class="lb-me">'
+      +'<div><div class="v" style="color:var(--accent)">#'+me.rang+'</div><div class="l">RANG</div></div>'
+      +'<div><div class="v">'+me.totalPoints+'</div><div class="l">POINTS</div></div>'
+      +'<div><div class="v" style="color:'+pc+'">'+pct+'%</div><div class="l">RÉUSSITE</div></div>'
+      +'<div><div class="v" style="color:var(--text2);font-size:1rem">'+prog+'</div><div class="l">PROGRESSION</div></div></div>';
+  }
+  const medals=['🥇','🥈','🥉'];
+  html+='<table class="lb"><tr><th>#</th><th>Élève</th><th style="text-align:right">Pts</th><th style="text-align:right">%</th><th style="text-align:right">Temps</th></tr>';
+  data.forEach(function(row){
+    const r=row.rang||0;
+    const name=nameFromEmail(row.email);
+    const pct=row.pct!=null?row.pct:(row.pourcentage!=null?row.pourcentage:0);
+    const temps=row.totalTemps||row.totalTime||0;
+    const isMe=row.email===myEmail;
+    const pc= pct>=80?'var(--success)':pct>=50?'var(--orange)':'var(--error)';
+    let tStr='—'; if(temps>0) tStr=fmtTime(temps);
+    html+='<tr style="background:'+(isMe?'rgba(34,214,138,.08)':'transparent')+'">'
+      +'<td style="font-weight:700">'+(r<=3&&r>=1?medals[r-1]:r)+'</td>'
+      +'<td'+(isMe?' style="font-weight:800;color:var(--accent)"':'')+'>'+esc(name)+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:var(--accent)">'+row.totalPoints+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:'+pc+'">'+pct+'%</td>'
+      +'<td style="text-align:right;color:var(--text2)" class="mono">'+tStr+'</td></tr>';
+  });
+  content.innerHTML=html+'</table>';
+}
+
+/* ---------- Rejouer ---------- */
+function restartGame(){
+  TRACKING.sessionId=new Date().toISOString();   // ⚠️ nouvelle session
+  APP.score=0; APP.streak=0; APP.bestStreak=0;
+  APP.completed=new Set(); APP.completedExercises=[]; APP.levelStats={};
+  APP.exerciseTimes={}; APP.exerciseScores={}; APP.scoreBeforeExercise=0; APP.exerciseStartTime=null;
+  APP.current=0; APP.qIndex=0; levelPhase='theory';
+  initQuestionState();
+  APP.globalTimerStart=Date.now();
+  updateHUD(); renderNav();
+  showEmailModal();
+  renderHome();
+}
+
+/* ============================================================
+   PARTIE 10 — DÉMARRAGE
+   ============================================================ */
+function init(){
+  initQuestionState();
+  renderNav(); updateHUD(); renderHome();
+  showEmailModal();     // ← TOUJOURS, même si un email est en localStorage
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ closeTheory(); closeLB(); }
+});
+init();
+</script>
+</body>
+</html>
